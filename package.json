@@ -1,0 +1,24 @@
+{
+  "name": "inkloom-ai-workspace",
+  "version": "1.0.0",
+  "description": "Inkloom AI - Intelligent Brand Governance Platform (Monorepo)",
+  "scripts": {
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "seed": "npm --prefix backend run seed",
+    "test:backend": "npm --prefix backend test",
+    "test:ai": "cd ai-service && .\\venv\\Scripts\\pytest tests",
+    "build:frontend": "npm --prefix frontend run build"
+  },
+  "keywords": [
+    "brand-governance",
+    "inkloomguard",
+    "ai-review",
+    "rag",
+    "fastapi",
+    "react",
+    "express"
+  ],
+  "author": "CodeNexus India 2026 Team",
+  "license": "MIT"
+}
