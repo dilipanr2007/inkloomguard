@@ -154,7 +154,7 @@ export const DEMO_SUBMISSION_DETAILS = {
     {
       _id: 'ver-2',
       versionNumber: 2,
-      rawText: "FreshPlus delivers refreshing natural hydration! India's beloved juice is finally here. Shop now.",
+      rawText: "FreshPlus delivers refreshing natural hydration! Our refreshing fruit juice is finally here. Shop now.",
       changeNotes: 'Revised copy applying AI governance suggestions and removing unsupported claims',
       governanceScore: 96,
       createdAt: new Date(Date.now() - 3600000 * 1).toISOString()
@@ -183,7 +183,7 @@ export const DEMO_SUBMISSION_DETAILS = {
       evidenceStatus: 'contradicted',
       sourceIds: ['GUIDE-002'],
       sourceExcerpt: 'Do not use unsupported health benefit claims. Instant stamina and disease curative claims violate regulatory guidelines.',
-      suggestedRewrite: 'delivers refreshing natural energy',
+      suggestedRewrite: 'delivers daily refreshment',
       confidence: 0.96,
       decision: 'pending'
     },
@@ -196,7 +196,7 @@ export const DEMO_SUBMISSION_DETAILS = {
       evidenceStatus: 'contradicted',
       sourceIds: ['GUIDE-003'],
       sourceExcerpt: 'Promotional superlatives require documented evidence in the brand repository before publication.',
-      suggestedRewrite: "India's beloved",
+      suggestedRewrite: 'a refreshing fruit juice',
       confidence: 0.92,
       decision: 'pending'
     },
@@ -502,6 +502,30 @@ export const updateDemoContentStatus = (id, newStatus) => {
   }
 };
 
+// Validates whether a suggested rewrite strictly adheres to brand facts and guidelines.
+export const isSuggestionSafe = (suggestedRewrite) => {
+  if (!suggestedRewrite || typeof suggestedRewrite !== 'string') return false;
+  const trimmed = suggestedRewrite.trim();
+  if (!trimmed || trimmed.toLowerCase() === 'human review required') return false;
+
+  // 1. Unapproved health, curative, stamina, vitality, or medical claims
+  const unsafeHealthRegex = /\b(vitality|natural\s+vitality|stamina|cures?|curing|curative|prevents?|preventing|disease|illness|medicinal|therapeutic|miracle\s+cure|instant\s+energy|energy\s+boost|boosts?\s+(?:your\s+)?immunity)\b/i;
+  if (unsafeHealthRegex.test(trimmed)) return false;
+
+  // 2. Unsupported rankings, superlatives, or popularity/consensus claims
+  const unsafeSuperlativeRegex = /\b(most\s+loved|beloved|most\s+popular|India's\s+No\.?\s*1|#1|world's\s+best|best\s+in|market\s+leader|guaranteed(?:\s+results)?|top\s+rated|favourite|favorite|number\s+one)\b/i;
+  if (unsafeSuperlativeRegex.test(trimmed)) return false;
+
+  // 3. Prohibited brand terminology
+  const prohibitedTermRegex = /(?:\b|^)(?:Fresh\+|Fresh\s+Plus|fresh\s+plus|Freshplus|Orange\s+Soda|Synthetic\s+Orange)(?:\b|$|\s|[.,!?;:])/i;
+  if (prohibitedTermRegex.test(trimmed)) return false;
+
+  // 4. Sensational punctuation or aggressive urgency
+  if (/(!{2,}|Buy\s+now!{1,3})/i.test(trimmed)) return false;
+
+  return true;
+};
+
 // Client-side source-grounded demo AI reviewer for dynamic submitted text
 export const analyzeDemoText = (text) => {
   const findings = [];
@@ -574,19 +598,19 @@ export const analyzeDemoText = (text) => {
     {
       regex: /(cures?\s+(?:fatigue|tiredness|illness|disease)(?:\s+instantly)?)/i,
       reason: 'All statements asserting curative, medicinal, disease prevention, or instant stamina outcomes are strictly prohibited unless substantiated by an approved clinical fact in the brand repository.',
-      rewrite: 'helps replenish your energy naturally',
+      rewrite: 'delivers daily refreshment',
       sourceId: 'GUIDE-002'
     },
     {
       regex: /(boosts?\s+(?:your\s+)?immunity(?:\s+by\s+\d+%)?)/i,
       reason: 'Quantitative medical claims ("boosts immunity") violate FSSAI advertising standards without approved laboratory clinical trials.',
-      rewrite: 'delivers 24mg natural Vitamin C to support daily wellness',
+      rewrite: 'Human review required',
       sourceId: 'GUIDE-002'
     },
     {
       regex: /\b(cures?\s+instantly|instant\s+cure)\b/i,
       reason: 'Therapeutic and curative promises violate regulatory brand compliance.',
-      rewrite: 'delivers instant refreshment',
+      rewrite: 'delivers daily refreshment',
       sourceId: 'GUIDE-002'
     }
   ];
@@ -615,7 +639,7 @@ export const analyzeDemoText = (text) => {
     {
       regex: /(India's\s+No\.?\s*1(?:\s+energy\s+drink|\s+juice)?)/i,
       reason: 'Promotional superlatives such as "India\'s No. 1" or market dominance assertions require documented, independently verified market share audit evidence in the brand repository before publication.',
-      rewrite: "India's beloved beverage",
+      rewrite: 'a refreshing fruit juice',
       sourceId: 'GUIDE-003'
     },
     {
@@ -662,6 +686,13 @@ export const analyzeDemoText = (text) => {
       decision: 'pending'
     });
   }
+
+  // Validate suggestions against approved brand guidelines and facts
+  findings.forEach((f) => {
+    if (!isSuggestionSafe(f.suggestedRewrite)) {
+      f.suggestedRewrite = 'Human review required';
+    }
+  });
 
   // Calculate score
   const penalty = findings.reduce((acc, f) => {

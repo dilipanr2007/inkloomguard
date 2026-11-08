@@ -5,7 +5,8 @@ import api, { PUBLIC_DEMO_MODE } from '../services/api';
 import {
   recordDemoAuditLog,
   updateDemoContentStatus,
-  analyzeDemoText
+  analyzeDemoText,
+  isSuggestionSafe
 } from '../services/demoData';
 import {
   ShieldAlert,
@@ -144,9 +145,9 @@ export default function ContentReviewStudioPage() {
 
     // Apply accepted and edited suggestions
     data.findings.forEach((f) => {
-      if (f.decision === 'accepted' && f.suggestedRewrite) {
+      if (f.decision === 'accepted' && f.suggestedRewrite && isSuggestionSafe(f.suggestedRewrite)) {
         updated = updated.split(f.excerpt).join(f.suggestedRewrite);
-      } else if (f.decision === 'edited' && f.editedRewrite) {
+      } else if (f.decision === 'edited' && f.editedRewrite && isSuggestionSafe(f.editedRewrite)) {
         updated = updated.split(f.excerpt).join(f.editedRewrite);
       }
     });
@@ -829,17 +830,39 @@ export default function ContentReviewStudioPage() {
                   </div>
 
                   {/* Suggested Rewrite */}
-                  {f.suggestedRewrite && (
-                    <div className="mt-3 p-3 rounded-lg bg-emerald-50/60 border border-emerald-200/80 space-y-1">
-                      <p className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wider flex items-center space-x-1">
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Suggested Correction:</span>
-                      </p>
-                      <p className="text-xs font-semibold text-emerald-950">
-                        {f.decision === 'edited' && f.editedRewrite ? f.editedRewrite : f.suggestedRewrite}
-                      </p>
-                    </div>
-                  )}
+                  {f.suggestedRewrite && (() => {
+                    const effectiveRewrite = f.decision === 'edited' && f.editedRewrite ? f.editedRewrite : f.suggestedRewrite;
+                    const isSafe = isSuggestionSafe(effectiveRewrite);
+                    return (
+                      <div className={`mt-3 p-3 rounded-lg border space-y-1 ${
+                        !isSafe
+                          ? 'bg-amber-50/70 border-amber-200/90 text-amber-950'
+                          : 'bg-emerald-50/60 border-emerald-200/80 text-emerald-950'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <p className={`text-[11px] font-semibold uppercase tracking-wider flex items-center space-x-1 ${
+                            !isSafe ? 'text-amber-800' : 'text-emerald-800'
+                          }`}>
+                            <Sparkles className={`w-3.5 h-3.5 ${!isSafe ? 'text-amber-600' : 'text-emerald-600'}`} />
+                            <span>Suggested Correction:</span>
+                          </p>
+                          {!isSafe && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-200 text-amber-900 border border-amber-300">
+                              Human Review Required
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs font-semibold">
+                          {effectiveRewrite}
+                        </p>
+                        {!isSafe && (
+                          <p className="text-[11px] text-amber-800 italic mt-1">
+                            Automated suggestion does not meet verified brand evidence standards. Manual human review required.
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Dismissal Reason Note if already dismissed */}
                   {f.decision === 'dismissed' && f.dismissalReason && (
@@ -849,40 +872,58 @@ export default function ContentReviewStudioPage() {
                   )}
 
                   {/* Human Action Controls */}
-                  {content.status !== 'approved' && (
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end space-x-2 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => handleDecision(f._id, 'accepted')}
-                        className={`inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                          f.decision === 'accepted'
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                        }`}
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Accept Suggestion</span>
-                      </button>
+                  {content.status !== 'approved' && (() => {
+                    const effectiveRewrite = f.decision === 'edited' && f.editedRewrite ? f.editedRewrite : f.suggestedRewrite;
+                    const canAccept = isSuggestionSafe(effectiveRewrite);
+                    return (
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end space-x-2 text-xs">
+                        {canAccept ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDecision(f._id, 'accepted')}
+                            className={`inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                              f.decision === 'accepted'
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                            }`}
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Accept Suggestion</span>
+                          </button>
+                        ) : (
+                          <div
+                            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold"
+                            title="No safe automated correction meets brand evidence standards. Please provide custom phrasing or dismiss with justification."
+                          >
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                            <span>Human Review Required</span>
+                          </div>
+                        )}
 
-                      <button
-                        type="button"
-                        onClick={() => setEditModal({ open: true, findingId: f._id, rewrite: f.editedRewrite || f.suggestedRewrite })}
-                        className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-colors"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                        <span>Edit</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditModal({
+                            open: true,
+                            findingId: f._id,
+                            rewrite: f.editedRewrite || (f.suggestedRewrite === 'Human review required' ? '' : f.suggestedRewrite)
+                          })}
+                          className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-colors"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>Edit</span>
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setDismissModal({ open: true, findingId: f._id, reason: '' })}
-                        className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 font-semibold transition-colors"
-                      >
-                        <XCircle className="w-3.5 h-3.5" />
-                        <span>Dismiss...</span>
-                      </button>
-                    </div>
-                  )}
+                        <button
+                          type="button"
+                          onClick={() => setDismissModal({ open: true, findingId: f._id, reason: '' })}
+                          className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 font-semibold transition-colors"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          <span>Dismiss...</span>
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
               ))}
             </div>

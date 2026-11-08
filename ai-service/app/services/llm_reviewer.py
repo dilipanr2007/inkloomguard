@@ -68,7 +68,12 @@ STRICT OPERATIONAL RULES:
    - "contradicted": A claim that directly contradicts an approved guideline or approved fact.
    - "advisory": Tone, style, or subjective guidance where evidence suggests a softer correction.
 3. Every finding MUST contain an exact substring "excerpt" from the submitted content.
-4. "suggested_rewrite" must preserve the creator's intent and tone, correcting only the non-compliant part.
+4. STRICT SUGGESTED CORRECTION REQUIREMENTS:
+   - Never replace one unsupported claim with another.
+   - Every suggested correction MUST be strictly checked against approved brand facts and guidelines.
+   - For unsupported medical or curative claims, REMOVE the medical benefit entirely unless approved clinical evidence exists in the Approved Knowledge. Never suggest ungrounded health or vitality claims (e.g. do NOT use "vitality", "natural vitality", "stamina", or "cure").
+   - For unsupported rankings, superlatives, or popularity claims (such as "India's No. 1", "World's best"), use neutral promotional wording (e.g. "a refreshing fruit juice", "our quality beverage"). Never introduce unsupported popularity or consensus claims (e.g. do NOT use "most loved" or "beloved").
+   - If no safe correction can be generated from approved evidence, you MUST return "Human review required" as the suggested_rewrite.
 5. If the content complies with a rule, DO NOT generate a finding for it.
 
 APPROVED KNOWLEDGE FOR THIS REVIEW:
@@ -136,7 +141,7 @@ Return a valid JSON array of findings adhering to this exact schema:
                 evidence_status="unsupported",
                 source_ids=[guide['id']],
                 source_excerpt=guide['text'],
-                suggested_rewrite="supports daily refreshment and natural vitality",
+                suggested_rewrite="delivers daily refreshment",
                 confidence=0.94
             ))
 
@@ -156,7 +161,7 @@ Return a valid JSON array of findings adhering to this exact schema:
                 evidence_status="unsupported",
                 source_ids=[guide['id']],
                 source_excerpt=guide['text'],
-                suggested_rewrite="one of India's most loved fruit juices",
+                suggested_rewrite="a refreshing fruit juice",
                 confidence=0.91
             ))
 

@@ -253,7 +253,7 @@ const seedData = async () => {
         evidenceStatus: 'unsupported',
         sourceIds: ['GUIDE-002'],
         sourceExcerpt: 'Do not use unsupported health benefit claims. All statements asserting curative or instant stamina outcomes are prohibited.',
-        suggestedRewrite: 'supports daily refreshment and natural energy',
+        suggestedRewrite: 'delivers daily refreshment',
         confidence: 0.94,
         decision: 'pending'
       },
@@ -267,7 +267,7 @@ const seedData = async () => {
         evidenceStatus: 'unsupported',
         sourceIds: ['GUIDE-003'],
         sourceExcerpt: 'Promotional superlatives such as "India\'s No. 1" require documented, verified evidence in the brand repository.',
-        suggestedRewrite: 'one of India’s most loved fruit juices',
+        suggestedRewrite: 'a refreshing fruit juice',
         confidence: 0.91,
         decision: 'pending'
       },

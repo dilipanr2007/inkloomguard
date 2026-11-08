@@ -133,10 +133,16 @@ def review_content(request: ReviewRequest):
     findings.extend(llm_findings)
 
     # 6. Verification and Validation Layer
+    prohibited_terms = []
+    for t in terminology_list:
+        prohibited_terms.extend(t.get("prohibited_terms", []))
+
     validated_findings = FindingValidator.validate_findings(
         findings=findings,
         submitted_text=request.submitted_text,
-        valid_source_ids=valid_source_ids
+        valid_source_ids=valid_source_ids,
+        approved_facts=facts_list,
+        prohibited_terms=prohibited_terms
     )
 
     # 7. Calculate Governance Health Score (0 - 100)
