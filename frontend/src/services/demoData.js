@@ -473,3 +473,253 @@ export const DEMO_AUDIT_LOGS = [
     createdAt: new Date(Date.now() - 86400000 * 2).toISOString()
   }
 ];
+
+// Helper to record demo-mode audit events without database mutations
+export const recordDemoAuditLog = ({ action, user, targetId, details }) => {
+  const newLog = {
+    _id: `log-demo-${Date.now()}`,
+    userEmail: user?.email || 'judge@freshplus.io',
+    role: user?.role || 'reviewer',
+    action,
+    targetResource: 'Content',
+    targetId: targetId || 'demo-submission-1',
+    details: details || {},
+    createdAt: new Date().toISOString()
+  };
+  DEMO_AUDIT_LOGS.unshift(newLog);
+  return newLog;
+};
+
+// Helper to update demo content status in memory
+export const updateDemoContentStatus = (id, newStatus) => {
+  const match = DEMO_CONTENTS.find(c => c._id === id);
+  if (match) {
+    match.status = newStatus;
+    match.updatedAt = new Date().toISOString();
+  }
+  if (DEMO_SUBMISSION_DETAILS.content && DEMO_SUBMISSION_DETAILS.content._id === id) {
+    DEMO_SUBMISSION_DETAILS.content.status = newStatus;
+  }
+};
+
+// Client-side source-grounded demo AI reviewer for dynamic submitted text
+export const analyzeDemoText = (text) => {
+  const findings = [];
+  if (!text) return { findings: [], score: 100, completed: true };
+
+  // 1. Prohibited terminology checks
+  const termRules = [
+    {
+      prohibited: 'Fresh+',
+      preferred: 'FreshPlus',
+      category: 'Brand Terminology',
+      severity: 'high',
+      guideId: 'GUIDE-001',
+      termId: 'TERM-001',
+      reason: 'The prohibited term "Fresh+" violates brand guidelines. The approved and legally registered name is "FreshPlus". Never separate the words or substitute "+" for "Plus".'
+    },
+    {
+      prohibited: 'Fresh Plus',
+      preferred: 'FreshPlus',
+      category: 'Brand Terminology',
+      severity: 'high',
+      guideId: 'GUIDE-001',
+      termId: 'TERM-001',
+      reason: 'The prohibited variation "Fresh Plus" violates brand standards. The approved single-word name is "FreshPlus".'
+    },
+    {
+      prohibited: 'Processed Drink',
+      preferred: '100% Cold-Pressed Natural Juice',
+      category: 'Brand Terminology',
+      severity: 'medium',
+      guideId: 'GUIDE-001',
+      termId: 'TERM-002',
+      reason: 'Emphasize cold-pressed extraction technique and raw purity.'
+    },
+    {
+      prohibited: 'Sugar Free',
+      preferred: 'Zero Added Cane Sugar',
+      category: 'Brand Terminology',
+      severity: 'high',
+      guideId: 'GUIDE-001',
+      termId: 'TERM-003',
+      reason: 'Our products contain natural fruit sugars; "Sugar Free" violates consumer protection standards.'
+    }
+  ];
+
+  termRules.forEach((rule) => {
+    const escaped = rule.prohibited.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(`(?:\\b|^)${escaped}(?:\\b|$|\\s|[.,!?;:])`, 'gi');
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      const excerpt = match[0].replace(/[\s.,!?;:]+$/, '');
+      findings.push({
+        _id: `f-demo-${findings.length + 1}`,
+        category: rule.category,
+        severity: rule.severity,
+        excerpt,
+        reason: rule.reason,
+        evidenceStatus: 'contradicted',
+        sourceIds: [rule.guideId, rule.termId],
+        sourceExcerpt: `The preferred and legally registered product name is "${rule.preferred}". Prohibited: ${rule.prohibited}.`,
+        suggestedRewrite: rule.preferred,
+        confidence: 0.98,
+        decision: 'pending'
+      });
+    }
+  });
+
+  // 2. Curative & Health Claims
+  const healthPatterns = [
+    {
+      regex: /(cures?\s+(?:fatigue|tiredness|illness|disease)(?:\s+instantly)?)/i,
+      reason: 'All statements asserting curative, medicinal, disease prevention, or instant stamina outcomes are strictly prohibited unless substantiated by an approved clinical fact in the brand repository.',
+      rewrite: 'helps replenish your energy naturally',
+      sourceId: 'GUIDE-002'
+    },
+    {
+      regex: /(boosts?\s+(?:your\s+)?immunity(?:\s+by\s+\d+%)?)/i,
+      reason: 'Quantitative medical claims ("boosts immunity") violate FSSAI advertising standards without approved laboratory clinical trials.',
+      rewrite: 'delivers 24mg natural Vitamin C to support daily wellness',
+      sourceId: 'GUIDE-002'
+    },
+    {
+      regex: /\b(cures?\s+instantly|instant\s+cure)\b/i,
+      reason: 'Therapeutic and curative promises violate regulatory brand compliance.',
+      rewrite: 'delivers instant refreshment',
+      sourceId: 'GUIDE-002'
+    }
+  ];
+
+  healthPatterns.forEach((hp) => {
+    const match = text.match(hp.regex);
+    if (match) {
+      findings.push({
+        _id: `f-demo-${findings.length + 1}`,
+        category: 'Unsupported Claim',
+        severity: 'high',
+        excerpt: match[0],
+        reason: hp.reason,
+        evidenceStatus: 'contradicted',
+        sourceIds: [hp.sourceId],
+        sourceExcerpt: 'Do not use unsupported health benefit claims. Curative, medicinal, or instant disease outcomes are strictly prohibited.',
+        suggestedRewrite: hp.rewrite,
+        confidence: 0.95,
+        decision: 'pending'
+      });
+    }
+  });
+
+  // 3. Superlative & Guarantee Claims
+  const superlativePatterns = [
+    {
+      regex: /(India's\s+No\.?\s*1(?:\s+energy\s+drink|\s+juice)?)/i,
+      reason: 'Promotional superlatives such as "India\'s No. 1" or market dominance assertions require documented, independently verified market share audit evidence in the brand repository before publication.',
+      rewrite: "India's beloved beverage",
+      sourceId: 'GUIDE-003'
+    },
+    {
+      regex: /(guaranteed\s+results?!?)/i,
+      reason: 'Absolute promotional guarantees violate fair advertising practice and brand communication standards.',
+      rewrite: 'quality you can taste every day',
+      sourceId: 'GUIDE-003'
+    }
+  ];
+
+  superlativePatterns.forEach((sp) => {
+    const match = text.match(sp.regex);
+    if (match) {
+      findings.push({
+        _id: `f-demo-${findings.length + 1}`,
+        category: 'Promotional Claim',
+        severity: 'medium',
+        excerpt: match[0],
+        reason: sp.reason,
+        evidenceStatus: 'contradicted',
+        sourceIds: [sp.sourceId],
+        sourceExcerpt: 'Promotional superlatives and performance guarantees require documented evidence in the brand repository before publication.',
+        suggestedRewrite: sp.rewrite,
+        confidence: 0.92,
+        decision: 'pending'
+      });
+    }
+  });
+
+  // 4. Brand Tone & Aggressive Punctuation
+  const toneMatch = text.match(/(!{2,}|Buy now!{1,3})/i);
+  if (toneMatch) {
+    findings.push({
+      _id: `f-demo-${findings.length + 1}`,
+      category: 'Brand Style & Tone',
+      severity: 'low',
+      excerpt: toneMatch[0],
+      reason: 'Multiple exclamation points (!!!) and aggressive promotional shouting violate our refined editorial voice standards.',
+      evidenceStatus: 'flagged',
+      sourceIds: ['GUIDE-004'],
+      sourceExcerpt: 'Maintain a clean, premium, trustworthy editorial voice. Avoid multiple exclamation marks and aggressive clickbait.',
+      suggestedRewrite: '.',
+      confidence: 0.89,
+      decision: 'pending'
+    });
+  }
+
+  // Calculate score
+  const penalty = findings.reduce((acc, f) => {
+    if (f.severity === 'high') return acc + 22;
+    if (f.severity === 'medium') return acc + 12;
+    return acc + 6;
+  }, 0);
+  const score = Math.max(15, 100 - penalty);
+
+  return { findings, score, completed: true };
+};
+
+// Helper to store a custom demo submission in memory
+export const saveCustomDemoSubmission = (formData) => {
+  const analysis = analyzeDemoText(formData.rawText);
+  const newSubmission = {
+    _id: `demo-submission-${Date.now()}`,
+    title: formData.title || 'Custom Campaign Draft',
+    contentType: formData.contentType || 'Social Media Post',
+    campaign: formData.campaign || 'Summer Launch 2026',
+    status: formData.autoReview ? 'ai_reviewed' : 'draft',
+    currentVersion: 1,
+    governanceScore: formData.autoReview ? analysis.score : null,
+    totalFindings: formData.autoReview ? analysis.findings.length : 0,
+    creator: {
+      name: 'Priya Sharma (Creator)',
+      email: 'creator@freshplus.io'
+    },
+    organization: 'FreshPlus Global',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  DEMO_CONTENTS.unshift(newSubmission);
+
+  // Update active studio details
+  DEMO_SUBMISSION_DETAILS.content = newSubmission;
+  DEMO_SUBMISSION_DETAILS.currentVersion = {
+    _id: `ver-${Date.now()}`,
+    contentId: newSubmission._id,
+    versionNumber: 1,
+    rawText: formData.rawText,
+    changeNotes: 'Submitted for pre-publication governance review',
+    aiReviewCompleted: !!formData.autoReview,
+    governanceScore: formData.autoReview ? analysis.score : null,
+    totalFindings: formData.autoReview ? analysis.findings.length : 0,
+    createdAt: new Date().toISOString()
+  };
+  DEMO_SUBMISSION_DETAILS.allVersions = [DEMO_SUBMISSION_DETAILS.currentVersion];
+  DEMO_SUBMISSION_DETAILS.findings = formData.autoReview ? analysis.findings : [];
+  DEMO_SUBMISSION_DETAILS.comments = [];
+
+  recordDemoAuditLog({
+    action: 'CONTENT_SUBMITTED (Demo)',
+    targetId: newSubmission._id,
+    details: { title: newSubmission.title, version: 1 }
+  });
+
+  return newSubmission;
+};
+

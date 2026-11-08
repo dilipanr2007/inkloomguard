@@ -3,6 +3,11 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api, { PUBLIC_DEMO_MODE } from '../services/api';
 import {
+  recordDemoAuditLog,
+  updateDemoContentStatus,
+  analyzeDemoText
+} from '../services/demoData';
+import {
   ShieldAlert,
   CheckCircle2,
   AlertTriangle,
@@ -18,7 +23,8 @@ import {
   Check,
   Send,
   CornerDownRight,
-  Lock
+  Lock,
+  Clock
 } from 'lucide-react';
 
 export default function ContentReviewStudioPage() {
@@ -30,11 +36,13 @@ export default function ContentReviewStudioPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeFindingId, setActiveFindingId] = useState(null);
+  const [toastNotice, setToastNotice] = useState(null);
 
   // Modals state
   const [dismissModal, setDismissModal] = useState({ open: false, findingId: null, reason: '' });
   const [editModal, setEditModal] = useState({ open: false, findingId: null, rewrite: '' });
   const [changesModal, setChangesModal] = useState({ open: false, reason: '' });
+  const [rejectModal, setRejectModal] = useState({ open: false, reason: '' });
   const [revisionMode, setRevisionMode] = useState(false);
   const [revisedText, setRevisedText] = useState('');
   const [revisionNotes, setRevisionNotes] = useState('');
@@ -63,9 +71,26 @@ export default function ContentReviewStudioPage() {
     setActionLoading(true);
     if (PUBLIC_DEMO_MODE) {
       setTimeout(() => {
+        const text = data?.currentVersion?.rawText || '';
+        const analysis = analyzeDemoText(text);
+        setData((prev) => ({
+          ...prev,
+          content: { ...prev.content, status: 'ai_reviewed' },
+          currentVersion: {
+            ...prev.currentVersion,
+            aiReviewCompleted: true,
+            governanceScore: analysis.score,
+            totalFindings: analysis.findings.length
+          },
+          findings: analysis.findings
+        }));
         setActionLoading(false);
-        alert('AI Review scan refreshed: Evaluated copy against 5 brand guidelines and 3 approved facts. 4 findings verified.');
-      }, 600);
+        setToastNotice({
+          type: 'info',
+          title: 'AI Governance Scan Completed (Demo Mode)',
+          message: `Demo Scan: Analyzed copy against 5 brand guidelines and 3 facts. Found ${analysis.findings.length} findings with governance score ${analysis.score}/100. (Demo action — not saved to production).`
+        });
+      }, 500);
       return;
     }
     try {
@@ -137,28 +162,42 @@ export default function ContentReviewStudioPage() {
 
     if (PUBLIC_DEMO_MODE) {
       setTimeout(() => {
-        setData((prev) => {
-          if (!prev) return prev;
-          const nextVerNumber = (prev.content?.currentVersion || 1) + 1;
-          const newVersion = {
-            _id: `ver-${nextVerNumber}`,
-            versionNumber: nextVerNumber,
-            rawText: revisedText,
-            changeNotes: revisionNotes || 'Applied suggested brand rewrites',
-            governanceScore: 94,
-            createdAt: new Date().toISOString()
-          };
-          return {
-            ...prev,
-            content: { ...prev.content, currentVersion: nextVerNumber, status: 'in_review' },
-            currentVersion: newVersion,
-            allVersions: [...(prev.allVersions || []), newVersion],
-            findings: [] // AI finds no further violations after applying rewrites!
-          };
+        const nextVerNumber = (data?.content?.currentVersion || 1) + 1;
+        const analysis = analyzeDemoText(revisedText);
+        const newVersion = {
+          _id: `ver-${nextVerNumber}`,
+          versionNumber: nextVerNumber,
+          rawText: revisedText,
+          changeNotes: revisionNotes || 'Applied suggested brand rewrites',
+          aiReviewCompleted: true,
+          governanceScore: analysis.score,
+          totalFindings: analysis.findings.length,
+          createdAt: new Date().toISOString()
+        };
+
+        setData((prev) => ({
+          ...prev,
+          content: { ...prev.content, currentVersion: nextVerNumber, status: 'in_review' },
+          currentVersion: newVersion,
+          allVersions: [...(prev.allVersions || []), newVersion],
+          findings: analysis.findings
+        }));
+
+        recordDemoAuditLog({
+          action: 'REVISION_SUBMITTED (Demo)',
+          user,
+          targetId: id,
+          details: { version: nextVerNumber, changeNotes: newVersion.changeNotes }
         });
+
         setRevisionMode(false);
         setRevisionNotes('');
         setActionLoading(false);
+        setToastNotice({
+          type: 'info',
+          title: `Draft Version ${nextVerNumber} Created`,
+          message: `Demo Action Recorded: Version ${nextVerNumber} generated with updated governance score ${analysis.score}/100. (Demo action — not saved to production).`
+        });
       }, 500);
       return;
     }
@@ -181,9 +220,25 @@ export default function ContentReviewStudioPage() {
 
   const handleApprove = async () => {
     if (PUBLIC_DEMO_MODE) {
-      alert('Public Demo Mode (Read-Only): Content approval is locked to preserve the review baseline for CodeNexus India judges. In production, this completes the Human-in-the-Loop review and authorizes publication.');
+      updateDemoContentStatus(id, 'approved');
+      recordDemoAuditLog({
+        action: 'CONTENT_APPROVED (Demo)',
+        user,
+        targetId: id,
+        details: { title: data?.content?.title, note: 'Approved in Demo Mode' }
+      });
+      setData((prev) => ({
+        ...prev,
+        content: { ...prev.content, status: 'approved' }
+      }));
+      setToastNotice({
+        type: 'success',
+        title: 'Content Approved for Publication',
+        message: 'Demo action recorded: Content marked as Approved. (Demo action — not saved to production).'
+      });
       return;
     }
+
     if (!window.confirm('Confirm publication approval for this version?')) return;
     setActionLoading(true);
     try {
@@ -203,11 +258,36 @@ export default function ContentReviewStudioPage() {
       alert('Please state what changes are required.');
       return;
     }
+
     if (PUBLIC_DEMO_MODE) {
-      alert('Public Demo Mode (Read-Only): Change request workflow is locked during judge evaluation.');
+      updateDemoContentStatus(id, 'changes_requested');
+      recordDemoAuditLog({
+        action: 'CHANGES_REQUESTED (Demo)',
+        user,
+        targetId: id,
+        details: { title: data?.content?.title, reason: changesModal.reason }
+      });
+      const reviewerComment = {
+        _id: `comm-demo-${Date.now()}`,
+        author: { name: user?.name || 'Judge (Reviewer)', role: user?.role || 'reviewer' },
+        comment: `[Changes Requested]: ${changesModal.reason}`,
+        versionNumber: data?.content?.currentVersion || 1,
+        createdAt: new Date().toISOString()
+      };
+      setData((prev) => ({
+        ...prev,
+        content: { ...prev.content, status: 'changes_requested' },
+        comments: [reviewerComment, ...(prev.comments || [])]
+      }));
       setChangesModal({ open: false, reason: '' });
+      setToastNotice({
+        type: 'warning',
+        title: 'Changes Requested',
+        message: 'Demo action recorded: Submission status set to Changes Requested. (Demo action — not saved to production).'
+      });
       return;
     }
+
     setActionLoading(true);
     try {
       await api.post(`/content/${id}/request-changes`, { reason: changesModal.reason });
@@ -215,6 +295,53 @@ export default function ContentReviewStudioPage() {
       await fetchContent();
     } catch (err) {
       alert(`Failed to request changes: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!rejectModal.reason.trim()) {
+      alert('Please state the reason for rejection.');
+      return;
+    }
+
+    if (PUBLIC_DEMO_MODE) {
+      updateDemoContentStatus(id, 'rejected');
+      recordDemoAuditLog({
+        action: 'CONTENT_REJECTED (Demo)',
+        user,
+        targetId: id,
+        details: { title: data?.content?.title, reason: rejectModal.reason }
+      });
+      const reviewerComment = {
+        _id: `comm-demo-${Date.now()}`,
+        author: { name: user?.name || 'Judge (Reviewer)', role: user?.role || 'reviewer' },
+        comment: `[Rejected]: ${rejectModal.reason}`,
+        versionNumber: data?.content?.currentVersion || 1,
+        createdAt: new Date().toISOString()
+      };
+      setData((prev) => ({
+        ...prev,
+        content: { ...prev.content, status: 'rejected' },
+        comments: [reviewerComment, ...(prev.comments || [])]
+      }));
+      setRejectModal({ open: false, reason: '' });
+      setToastNotice({
+        type: 'error',
+        title: 'Content Rejected',
+        message: 'Demo action recorded: Submission rejected from publication queue. (Demo action — not saved to production).'
+      });
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      await api.post(`/content/${id}/reject`, { reason: rejectModal.reason });
+      setRejectModal({ open: false, reason: '' });
+      await fetchContent();
+    } catch (err) {
+      alert(`Failed to reject content: ${err.response?.data?.message || err.message}`);
     } finally {
       setActionLoading(false);
     }
@@ -357,15 +484,24 @@ export default function ContentReviewStudioPage() {
             </button>
 
             {/* Human Authority Approval Buttons */}
-            {isReviewerOrManager && content.status !== 'approved' && (
+            {isReviewerOrManager && content.status !== 'approved' && content.status !== 'rejected' && (
               <>
                 <button
+                  type="button"
                   onClick={() => setChangesModal({ open: true, reason: '' })}
-                  className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold transition-colors"
+                  className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold transition-colors shadow-2xs"
                 >
                   Request Changes
                 </button>
                 <button
+                  type="button"
+                  onClick={() => setRejectModal({ open: true, reason: '' })}
+                  className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold transition-colors shadow-2xs"
+                >
+                  Reject Content
+                </button>
+                <button
+                  type="button"
                   onClick={handleApprove}
                   disabled={actionLoading}
                   className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-xs"
@@ -380,6 +516,20 @@ export default function ContentReviewStudioPage() {
               <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>Approved for Publication</span>
+              </div>
+            )}
+
+            {content.status === 'rejected' && (
+              <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-rose-100 text-rose-800 text-xs font-bold border border-rose-200">
+                <XCircle className="w-4 h-4 text-rose-600" />
+                <span>Rejected from Publication Queue</span>
+              </div>
+            )}
+
+            {content.status === 'changes_requested' && !isReviewerOrManager && (
+              <div className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-100 text-amber-800 text-xs font-bold border border-amber-200">
+                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                <span>Changes Requested</span>
               </div>
             )}
           </div>
@@ -407,6 +557,44 @@ export default function ContentReviewStudioPage() {
           </div>
         </div>
       </div>
+
+      {/* Requirement 6: Visible Demo Action Notification */}
+      {toastNotice && (
+        <div
+          role="alert"
+          className={`p-4 rounded-xl border flex items-start justify-between gap-3 shadow-xs animate-in fade-in duration-200 ${
+            toastNotice.type === 'success'
+              ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+              : toastNotice.type === 'warning'
+              ? 'bg-amber-50 border-amber-300 text-amber-950'
+              : toastNotice.type === 'error'
+              ? 'bg-rose-50 border-rose-300 text-rose-950'
+              : 'bg-blue-50 border-blue-300 text-blue-950'
+          }`}
+        >
+          <div className="flex items-start space-x-3">
+            {toastNotice.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />}
+            {toastNotice.type === 'warning' && <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />}
+            {toastNotice.type === 'error' && <XCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />}
+            {toastNotice.type === 'info' && <Sparkles className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />}
+            <div>
+              <p className="text-xs font-bold flex items-center space-x-1.5">
+                <span>{toastNotice.title}</span>
+                <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-black/10">In-Memory Demo</span>
+              </p>
+              <p className="text-xs mt-0.5 font-medium opacity-90">{toastNotice.message}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setToastNotice(null)}
+            className="text-slate-400 hover:text-slate-700 text-xs font-bold px-1.5 py-0.5 rounded hover:bg-black/5"
+            aria-label="Dismiss notification"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Main Review Workspace: 2-Column Split View */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -563,12 +751,32 @@ export default function ContentReviewStudioPage() {
             <span className="text-xs text-slate-500">Strictly Source-Grounded</span>
           </div>
 
-          {findings && findings.length === 0 ? (
+          {/* Guard against displaying zero violations when AI review has not actually completed */}
+          {(!currentVersion?.aiReviewCompleted || content.status === 'draft' || content.status === 'pending') ? (
+            <div className="p-10 text-center bg-amber-50/70 rounded-xl border border-amber-200 shadow-2xs space-y-3">
+              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 mx-auto">
+                <Clock className="w-6 h-6 text-amber-600 animate-pulse" />
+              </div>
+              <h4 className="text-sm font-bold text-slate-900">AI Governance Review Pending</h4>
+              <p className="text-xs text-slate-600 max-w-sm mx-auto">
+                This content version has not yet completed automated pre-publication governance analysis. Click below to scan against brand guidelines, approved facts, and terminology.
+              </p>
+              <button
+                type="button"
+                onClick={handleTriggerReReview}
+                disabled={actionLoading}
+                className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700 shadow-xs transition-colors"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>{actionLoading ? 'Analyzing Content...' : 'Run AI Governance Review'}</span>
+              </button>
+            </div>
+          ) : findings && findings.length === 0 ? (
             <div className="p-12 text-center bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
               <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
               <h4 className="text-sm font-bold text-slate-900">Zero Governance Violations Detected!</h4>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Content fully aligns with all approved brand guidelines, terminology, and verified facts.
+                Content successfully scanned and fully verified against all approved brand guidelines, terminology, and facts.
               </p>
             </div>
           ) : (
@@ -786,6 +994,45 @@ export default function ContentReviewStudioPage() {
                 className="px-4 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 disabled:opacity-50"
               >
                 Send Change Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Reject Content Modal */}
+      {rejectModal.open && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-5 space-y-4 shadow-xl border border-slate-200">
+            <div className="flex items-center space-x-2 text-rose-600 font-bold text-sm">
+              <XCircle className="w-5 h-5" />
+              <span>Reject Content Submission</span>
+            </div>
+            <p className="text-xs text-slate-500">
+              State the reason why this draft is rejected from the publication pipeline.
+            </p>
+            <textarea
+              rows={4}
+              required
+              placeholder="e.g. Fundamental non-compliance with brand standards and regulatory claims..."
+              value={rejectModal.reason}
+              onChange={(e) => setRejectModal({ ...rejectModal, reason: e.target.value })}
+              className="w-full p-2.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-rose-500"
+            ></textarea>
+            <div className="flex justify-end space-x-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setRejectModal({ open: false, reason: '' })}
+                className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleReject}
+                disabled={!rejectModal.reason.trim()}
+                className="px-4 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 disabled:opacity-50 shadow-xs"
+              >
+                Confirm Rejection
               </button>
             </div>
           </div>

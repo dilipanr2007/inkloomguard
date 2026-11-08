@@ -10,7 +10,11 @@ import {
   DEMO_ANALYTICS_FINDINGS,
   DEMO_ANALYTICS_RULES,
   DEMO_AUDIT_LOGS,
-  DEMO_USERS
+  DEMO_USERS,
+  saveCustomDemoSubmission,
+  analyzeDemoText,
+  updateDemoContentStatus,
+  recordDemoAuditLog
 } from './demoData';
 
 // Public Demo Mode flag for CodeNexus India 2026 Hackathon judging
@@ -19,14 +23,6 @@ import {
 export const PUBLIC_DEMO_MODE = import.meta.env.VITE_PUBLIC_DEMO_MODE !== 'false';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 20000, // 20s timeout to prevent hanging promises
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
 
 // Helper to provide source-grounded demo data for CodeNexus India 2026
 const getDemoResponse = (config) => {
@@ -84,19 +80,61 @@ const getDemoResponse = (config) => {
     return null;
   }
 
-  // Read-only Demo mutations: return safe mock response without changing production DB
+  // Safe In-Memory Demo Mutations: Handle locally without calling production backend
   if (method === 'post') {
-    if (url.includes('/content')) {
-      return {
-        success: true,
-        content: DEMO_CONTENTS[0],
-        message: 'Demo content submission recorded in memory for evaluation.'
-      };
+    if (url.includes('/approve')) {
+      updateDemoContentStatus('demo-submission-1', 'approved');
+      recordDemoAuditLog({
+        action: 'CONTENT_APPROVED (Demo)',
+        targetId: 'demo-submission-1',
+        details: { note: 'Approved in Demo Mode' }
+      });
+      return { success: true, message: 'Content approved in demo mode.' };
+    }
+    if (url.includes('/request-changes')) {
+      updateDemoContentStatus('demo-submission-1', 'changes_requested');
+      recordDemoAuditLog({
+        action: 'CHANGES_REQUESTED (Demo)',
+        targetId: 'demo-submission-1',
+        details: { note: 'Changes requested in demo mode' }
+      });
+      return { success: true, message: 'Changes requested in demo mode.' };
+    }
+    if (url.includes('/reject')) {
+      updateDemoContentStatus('demo-submission-1', 'rejected');
+      recordDemoAuditLog({
+        action: 'CONTENT_REJECTED (Demo)',
+        targetId: 'demo-submission-1',
+        details: { note: 'Rejected in demo mode' }
+      });
+      return { success: true, message: 'Content rejected in demo mode.' };
     }
     if (url.includes('/review')) {
+      const text = DEMO_SUBMISSION_DETAILS.currentVersion?.rawText || '';
+      const analysis = analyzeDemoText(text);
+      DEMO_SUBMISSION_DETAILS.currentVersion.governanceScore = analysis.score;
+      DEMO_SUBMISSION_DETAILS.currentVersion.totalFindings = analysis.findings.length;
+      DEMO_SUBMISSION_DETAILS.currentVersion.aiReviewCompleted = true;
+      DEMO_SUBMISSION_DETAILS.findings = analysis.findings;
       return {
         success: true,
-        message: 'AI Review completed successfully with 4 source-grounded findings.'
+        findings: analysis.findings,
+        governanceScore: analysis.score,
+        message: 'AI Review completed successfully with source-grounded findings.'
+      };
+    }
+    if (url.includes('/content')) {
+      let body = {};
+      try {
+        body = typeof config.data === 'string' ? JSON.parse(config.data || '{}') : (config.data || {});
+      } catch (e) {
+        body = {};
+      }
+      const newSub = saveCustomDemoSubmission(body);
+      return {
+        success: true,
+        content: newSub,
+        message: 'Demo content submission recorded and evaluated in memory.'
       };
     }
   }
@@ -107,10 +145,8 @@ const getDemoResponse = (config) => {
   };
 };
 
-// Use an Axios adapter interceptor when in PUBLIC_DEMO_MODE to guarantee 0ms latency,
-// instant offline/incognito support, and strict read-only backend isolation.
-const originalAdapter = axios.defaults.adapter;
-api.defaults.adapter = async (config) => {
+// Custom adapter that intercepts all calls when PUBLIC_DEMO_MODE is true
+const demoAdapter = async (config) => {
   if (PUBLIC_DEMO_MODE) {
     const demoData = getDemoResponse(config);
     if (demoData) {
@@ -125,13 +161,19 @@ api.defaults.adapter = async (config) => {
     }
   }
 
-  if (typeof originalAdapter === 'function') {
-    return originalAdapter(config);
-  }
-
-  // Fallback to fetch adapter in modern Axios
-  return axios.getAdapter(config.adapter || 'xhr')(config);
+  // Fallback to real HTTP transport when not in demo mode
+  const fetchAdapter = axios.getAdapter(config.adapter || 'xhr');
+  return fetchAdapter(config);
 };
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 20000, // 20s timeout to prevent hanging promises
+  adapter: demoAdapter,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
 
 api.interceptors.request.use(
   (config) => {

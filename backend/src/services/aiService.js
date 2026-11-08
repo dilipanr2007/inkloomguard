@@ -108,20 +108,23 @@ const requestAiReview = async ({ contentId, versionNumber, text, contentType }) 
 const runLocalFallbackReview = (text, terminology, guidelines, facts) => {
   const findings = [];
 
-  // 1. Terminology checks
+  // 1. Terminology checks with boundary-safe symbol handling
   terminology.forEach(term => {
-    term.prohibitedTerms.forEach(prohibited => {
-      const regex = new RegExp(`\\b${prohibited.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, term.caseSensitive ? 'g' : 'gi');
+    (term.prohibitedTerms || []).forEach(prohibited => {
+      if (!prohibited || !prohibited.trim()) return;
+      const escaped = prohibited.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pattern = new RegExp(`(?:\\b|^)${escaped}(?:\\b|$|\\s|[.,!?;:])`, term.caseSensitive ? 'g' : 'gi');
       let match;
-      while ((match = regex.exec(text)) !== null) {
+      while ((match = pattern.exec(text)) !== null) {
+        const excerpt = match[0].replace(/[\s.,!?;:]+$/, '');
         findings.push({
           category: 'Brand Terminology',
           severity: term.severity || 'high',
-          excerpt: match[0],
-          reason: term.explanation || `The term "${match[0]}" violates brand guidelines. Use "${term.preferredTerm}" instead.`,
+          excerpt,
+          reason: term.explanation || `The term "${excerpt}" violates brand guidelines. Use "${term.preferredTerm}" instead.`,
           evidence_status: 'contradicted',
           source_ids: [term.terminologyId],
-          source_excerpt: `Preferred product name is "${term.preferredTerm}". Prohibited: ${term.prohibitedTerms.join(', ')}.`,
+          source_excerpt: `Preferred product name is "${term.preferredTerm}". Prohibited: ${(term.prohibitedTerms || []).join(', ')}.`,
           suggested_rewrite: term.preferredTerm,
           confidence: 0.98
         });
@@ -130,37 +133,40 @@ const runLocalFallbackReview = (text, terminology, guidelines, facts) => {
   });
 
   // 2. Health claim / curative claims heuristic check
-  const healthMatches = text.match(/(cures?|prevents?|instant(ly)?|fatigue|disease|miracle)/gi);
+  const healthMatches = text.match(/(cures?\s+(?:fatigue|tiredness|illness|disease)(?:\s+instantly)?|boosts?\s+(?:your\s+)?immunity(?:\s+by\s+\d+%)?|cures?\s+instantly)/gi);
   if (healthMatches) {
     const guide02 = guidelines.find(g => g.guidelineId === 'GUIDE-002') || { guidelineId: 'GUIDE-002', description: 'Do not use unsupported health benefit claims.' };
-    const excerptMatch = text.match(/cures?\s+fatigue(\s+instantly)?/i) || [healthMatches[0]];
-    findings.push({
-      category: 'Unsupported Claim',
-      severity: 'high',
-      excerpt: excerptMatch[0],
-      reason: 'Health or medical outcome claim identified without substantiating clinical facts in the brand library.',
-      evidence_status: 'unsupported',
-      source_ids: [guide02.guidelineId],
-      source_excerpt: guide02.description,
-      suggested_rewrite: 'supports daily refreshment and active hydration',
-      confidence: 0.92
+    healthMatches.forEach(hm => {
+      findings.push({
+        category: 'Unsupported Claim',
+        severity: 'high',
+        excerpt: hm,
+        reason: 'Health, curative, or quantitative immunity claim identified without substantiating clinical facts in the brand library.',
+        evidence_status: 'unsupported',
+        source_ids: [guide02.guidelineId],
+        source_excerpt: guide02.description,
+        suggested_rewrite: 'supports daily refreshment and active hydration',
+        confidence: 0.92
+      });
     });
   }
 
   // 3. Superlative promotional claims heuristic check
-  const superlativeMatches = text.match(/(India's\s+No\.?\s*1|world's\s+best|#1\s+juice|guaranteed)/gi);
+  const superlativeMatches = text.match(/(India's\s+No\.?\s*1(?:\s+energy\s+drink|\s+juice)?|world's\s+best|#1\s+juice|guaranteed(?:\s+results)?)/gi);
   if (superlativeMatches) {
     const guide03 = guidelines.find(g => g.guidelineId === 'GUIDE-003') || { guidelineId: 'GUIDE-003', description: 'Promotional superlatives require approved verification.' };
-    findings.push({
-      category: 'Promotional Claim',
-      severity: 'medium',
-      excerpt: superlativeMatches[0],
-      reason: 'Promotional superlative claim requires explicit verification documentation.',
-      evidence_status: 'unsupported',
-      source_ids: [guide03.guidelineId],
-      source_excerpt: guide03.description,
-      suggested_rewrite: 'one of India’s most loved fruit juices',
-      confidence: 0.89
+    superlativeMatches.forEach(sm => {
+      findings.push({
+        category: 'Promotional Claim',
+        severity: 'medium',
+        excerpt: sm,
+        reason: 'Promotional superlative or performance guarantee claim requires explicit verification documentation.',
+        evidence_status: 'unsupported',
+        source_ids: [guide03.guidelineId],
+        source_excerpt: guide03.description,
+        suggested_rewrite: 'one of India’s most loved beverages',
+        confidence: 0.89
+      });
     });
   }
 

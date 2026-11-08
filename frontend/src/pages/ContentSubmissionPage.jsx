@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { PUBLIC_DEMO_MODE } from '../services/api';
+import { saveCustomDemoSubmission } from '../services/demoData';
 import { FileText, Sparkles, Send, ArrowLeft, AlertCircle } from 'lucide-react';
 
 export default function ContentSubmissionPage() {
@@ -37,8 +38,9 @@ export default function ContentSubmissionPage() {
 
     if (PUBLIC_DEMO_MODE) {
       setTimeout(() => {
+        const newSub = saveCustomDemoSubmission(formData);
         setLoading(false);
-        navigate('/content/demo-submission-1');
+        navigate(`/content/${newSub._id}`);
       }, 400);
       return;
     }

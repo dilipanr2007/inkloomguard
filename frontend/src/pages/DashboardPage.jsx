@@ -44,6 +44,8 @@ export default function DashboardPage() {
     switch (status) {
       case 'approved':
         return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">Approved</span>;
+      case 'rejected':
+        return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200">Rejected</span>;
       case 'changes_requested':
         return <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">Changes Requested</span>;
       case 'ai_reviewed':
