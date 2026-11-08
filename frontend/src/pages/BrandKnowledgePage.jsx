@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
+import api, { PUBLIC_DEMO_MODE } from '../services/api';
 import {
   BookOpen,
   PlusCircle,
@@ -81,6 +81,11 @@ export default function BrandKnowledgePage() {
 
   const handleCreateGuideline = async (e) => {
     e.preventDefault();
+    if (PUBLIC_DEMO_MODE) {
+      alert('Public Demo Mode (Read-Only): Adding guidelines is disabled to preserve the evaluation index for CodeNexus judges.');
+      setShowAddModal(false);
+      return;
+    }
     try {
       await api.post('/guidelines', newGuideline);
       setShowAddModal(false);
@@ -93,6 +98,11 @@ export default function BrandKnowledgePage() {
 
   const handleCreateTerminology = async (e) => {
     e.preventDefault();
+    if (PUBLIC_DEMO_MODE) {
+      alert('Public Demo Mode (Read-Only): Adding terminology rules is disabled to preserve the evaluation index.');
+      setShowAddModal(false);
+      return;
+    }
     try {
       await api.post('/terminology', newTerm);
       setShowAddModal(false);
@@ -105,6 +115,11 @@ export default function BrandKnowledgePage() {
 
   const handleCreateFact = async (e) => {
     e.preventDefault();
+    if (PUBLIC_DEMO_MODE) {
+      alert('Public Demo Mode (Read-Only): Adding approved facts is disabled to preserve the evaluation index.');
+      setShowAddModal(false);
+      return;
+    }
     try {
       await api.post('/facts', newFact);
       setShowAddModal(false);
@@ -116,6 +131,10 @@ export default function BrandKnowledgePage() {
   };
 
   const handleDeleteItem = async (endpoint, id) => {
+    if (PUBLIC_DEMO_MODE) {
+      alert('Public Demo Mode (Read-Only): Record deletion is disabled during judge evaluation.');
+      return;
+    }
     if (!window.confirm('Delete this approved knowledge record from the governance index?')) return;
     try {
       await api.delete(`/${endpoint}/${id}`);

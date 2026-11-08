@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { PUBLIC_DEMO_MODE } from './services/api';
 import AppLayout from './layouts/AppLayout';
 
 import LandingPage from './pages/LandingPage';
@@ -20,13 +21,28 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          {/* Public & Demo Entry Routes */}
+          {PUBLIC_DEMO_MODE ? (
+            <>
+              {/* In Public Demo Mode, direct visitors straight to the governance workspace */}
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/register" element={<Navigate to="/dashboard" replace />} />
+              {/* Preserved Direct Auth Routes for Administrator Access / Post-Judging Restoration */}
+              <Route path="/portal/login" element={<LoginPage />} />
+              <Route path="/portal/register" element={<RegisterPage />} />
+              <Route path="/overview" element={<LandingPage />} />
+            </>
+          ) : (
+            <>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+            </>
+          )}
 
           {/* Protected Application Routes */}
-          <Route element={<AppLayout requireAuth={true} />}>
+          <Route element={<AppLayout requireAuth={!PUBLIC_DEMO_MODE} />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/content" element={<ContentListPage />} />
             <Route path="/content/new" element={<ContentSubmissionPage />} />
@@ -38,7 +54,7 @@ export default function App() {
           </Route>
 
           {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -33,13 +33,16 @@ const registerUser = async (req, res, next) => {
 
     const token = generateToken(user._id);
 
-    await logAudit({
+    // Asynchronously log audit event without blocking client registration response
+    logAudit({
       user,
       role: user.role,
       action: 'USER_REGISTERED',
       targetResource: 'User',
       targetId: user._id,
       details: { email: user.email, role: user.role }
+    }).catch((err) => {
+      console.error('[Audit Log Error in Register]', err.message);
     });
 
     res.status(201).json({
@@ -82,13 +85,16 @@ const loginUser = async (req, res, next) => {
 
     const token = generateToken(user._id);
 
-    await logAudit({
+    // Asynchronously log audit event without blocking client login response
+    logAudit({
       user,
       role: user.role,
       action: 'USER_LOGIN',
       targetResource: 'User',
       targetId: user._id,
       details: { email: user.email, role: user.role }
+    }).catch((err) => {
+      console.error('[Audit Log Error in Login]', err.message);
     });
 
     res.json({

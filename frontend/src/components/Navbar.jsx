@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, LogOut, UserCircle, Globe, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { PUBLIC_DEMO_MODE } from '../services/api';
+import { ShieldCheck, LogOut, UserCircle, Globe, ChevronDown, CheckCircle2, RotateCcw } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout, switchDemoRole } = useAuth();
@@ -113,12 +114,16 @@ export default function Navbar() {
             <button
               onClick={() => {
                 logout();
-                navigate('/login');
+                if (PUBLIC_DEMO_MODE) {
+                  navigate('/dashboard');
+                } else {
+                  navigate('/login');
+                }
               }}
               className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-              title="Log Out"
+              title={PUBLIC_DEMO_MODE ? "Reset Demo Session" : "Log Out"}
             >
-              <LogOut className="w-4 h-4" />
+              {PUBLIC_DEMO_MODE ? <RotateCcw className="w-4 h-4 text-slate-400 hover:text-slate-700" /> : <LogOut className="w-4 h-4" />}
             </button>
           </div>
         ) : (

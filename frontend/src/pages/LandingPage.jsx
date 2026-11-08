@@ -48,7 +48,7 @@ export default function LandingPage() {
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              to="/login"
+              to="/dashboard"
               className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-3.5 rounded-xl bg-brand-600 text-white font-semibold text-sm hover:bg-brand-700 shadow-md transition-all"
             >
               <span>Explore Platform & Demo</span>

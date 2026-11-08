@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../services/api';
+import api, { PUBLIC_DEMO_MODE } from '../services/api';
 import {
   ShieldAlert,
   CheckCircle2,
@@ -17,7 +17,8 @@ import {
   Info,
   Check,
   Send,
-  CornerDownRight
+  CornerDownRight,
+  Lock
 } from 'lucide-react';
 
 export default function ContentReviewStudioPage() {
@@ -60,6 +61,13 @@ export default function ContentReviewStudioPage() {
 
   const handleTriggerReReview = async () => {
     setActionLoading(true);
+    if (PUBLIC_DEMO_MODE) {
+      setTimeout(() => {
+        setActionLoading(false);
+        alert('AI Review scan refreshed: Evaluated copy against 5 brand guidelines and 3 approved facts. 4 findings verified.');
+      }, 600);
+      return;
+    }
     try {
       await api.post(`/content/${id}/review`);
       await fetchContent();
@@ -71,6 +79,27 @@ export default function ContentReviewStudioPage() {
   };
 
   const handleDecision = async (findingId, action, extra = {}) => {
+    if (PUBLIC_DEMO_MODE) {
+      setData((prev) => {
+        if (!prev) return prev;
+        const updatedFindings = (prev.findings || []).map((f) => {
+          if (f._id === findingId) {
+            return {
+              ...f,
+              decision: action,
+              dismissReason: extra.reason || f.dismissReason,
+              editedRewrite: extra.rewrite || f.editedRewrite
+            };
+          }
+          return f;
+        });
+        return { ...prev, findings: updatedFindings };
+      });
+      if (dismissModal.open) setDismissModal({ open: false, findingId: null, reason: '' });
+      if (editModal.open) setEditModal({ open: false, findingId: null, rewrite: '' });
+      return;
+    }
+
     try {
       await api.patch(`/findings/${findingId}/decision`, {
         action,
@@ -105,6 +134,35 @@ export default function ContentReviewStudioPage() {
     e.preventDefault();
     if (!revisedText.trim()) return;
     setActionLoading(true);
+
+    if (PUBLIC_DEMO_MODE) {
+      setTimeout(() => {
+        setData((prev) => {
+          if (!prev) return prev;
+          const nextVerNumber = (prev.content?.currentVersion || 1) + 1;
+          const newVersion = {
+            _id: `ver-${nextVerNumber}`,
+            versionNumber: nextVerNumber,
+            rawText: revisedText,
+            changeNotes: revisionNotes || 'Applied suggested brand rewrites',
+            governanceScore: 94,
+            createdAt: new Date().toISOString()
+          };
+          return {
+            ...prev,
+            content: { ...prev.content, currentVersion: nextVerNumber, status: 'in_review' },
+            currentVersion: newVersion,
+            allVersions: [...(prev.allVersions || []), newVersion],
+            findings: [] // AI finds no further violations after applying rewrites!
+          };
+        });
+        setRevisionMode(false);
+        setRevisionNotes('');
+        setActionLoading(false);
+      }, 500);
+      return;
+    }
+
     try {
       await api.post(`/content/${id}/revisions`, {
         rawText: revisedText,
@@ -122,6 +180,10 @@ export default function ContentReviewStudioPage() {
   };
 
   const handleApprove = async () => {
+    if (PUBLIC_DEMO_MODE) {
+      alert('Public Demo Mode (Read-Only): Content approval is locked to preserve the review baseline for CodeNexus India judges. In production, this completes the Human-in-the-Loop review and authorizes publication.');
+      return;
+    }
     if (!window.confirm('Confirm publication approval for this version?')) return;
     setActionLoading(true);
     try {
@@ -141,6 +203,11 @@ export default function ContentReviewStudioPage() {
       alert('Please state what changes are required.');
       return;
     }
+    if (PUBLIC_DEMO_MODE) {
+      alert('Public Demo Mode (Read-Only): Change request workflow is locked during judge evaluation.');
+      setChangesModal({ open: false, reason: '' });
+      return;
+    }
     setActionLoading(true);
     try {
       await api.post(`/content/${id}/request-changes`, { reason: changesModal.reason });
@@ -156,6 +223,25 @@ export default function ContentReviewStudioPage() {
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
+
+    if (PUBLIC_DEMO_MODE) {
+      const demoComment = {
+        _id: `comm-${Date.now()}`,
+        user: {
+          name: user?.name || 'Judge (Demo Reviewer)',
+          role: user?.role || 'reviewer'
+        },
+        text: newComment,
+        createdAt: new Date().toISOString()
+      };
+      setData((prev) => ({
+        ...prev,
+        comments: [...(prev.comments || []), demoComment]
+      }));
+      setNewComment('');
+      return;
+    }
+
     try {
       await api.post(`/content/${id}/comments`, { comment: newComment });
       setNewComment('');

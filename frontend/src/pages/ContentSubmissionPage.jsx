@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import api, { PUBLIC_DEMO_MODE } from '../services/api';
 import { FileText, Sparkles, Send, ArrowLeft, AlertCircle } from 'lucide-react';
 
 export default function ContentSubmissionPage() {
@@ -34,6 +34,14 @@ export default function ContentSubmissionPage() {
 
     setError('');
     setLoading(true);
+
+    if (PUBLIC_DEMO_MODE) {
+      setTimeout(() => {
+        setLoading(false);
+        navigate('/content/demo-submission-1');
+      }, 400);
+      return;
+    }
 
     try {
       const res = await api.post('/content', formData);

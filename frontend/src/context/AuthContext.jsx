@@ -1,17 +1,33 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../services/api';
+import api, { PUBLIC_DEMO_MODE } from '../services/api';
+import { DEMO_USERS } from '../services/demoData';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
+  // If Public Demo Mode is active, initialize immediately with demo manager profile
   const [user, setUser] = useState(() => {
+    if (PUBLIC_DEMO_MODE) {
+      const savedRole = localStorage.getItem('inkloom_demo_role') || 'manager';
+      return DEMO_USERS[savedRole] || DEMO_USERS.manager;
+    }
     const saved = localStorage.getItem('inkloom_user');
     return saved ? JSON.parse(saved) : null;
   });
-  const [token, setToken] = useState(() => localStorage.getItem('inkloom_token') || null);
-  const [loading, setLoading] = useState(true);
+
+  const [token, setToken] = useState(() => {
+    if (PUBLIC_DEMO_MODE) return 'public-demo-token';
+    return localStorage.getItem('inkloom_token') || null;
+  });
+
+  const [loading, setLoading] = useState(() => !PUBLIC_DEMO_MODE);
 
   useEffect(() => {
+    if (PUBLIC_DEMO_MODE) {
+      setLoading(false);
+      return;
+    }
+
     const verifyUser = async () => {
       if (token) {
         try {
@@ -50,6 +66,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    if (PUBLIC_DEMO_MODE) {
+      localStorage.setItem('inkloom_demo_role', 'manager');
+      setUser(DEMO_USERS.manager);
+      return;
+    }
     localStorage.removeItem('inkloom_token');
     localStorage.removeItem('inkloom_user');
     setToken(null);
@@ -57,6 +78,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const switchDemoRole = async (targetRole) => {
+    if (PUBLIC_DEMO_MODE) {
+      const selected = DEMO_USERS[targetRole] || DEMO_USERS.manager;
+      localStorage.setItem('inkloom_demo_role', targetRole);
+      setUser(selected);
+      return selected;
+    }
+
     const creds = {
       creator: { email: 'creator@freshplus.io', password: 'Creator123!' },
       reviewer: { email: 'reviewer@freshplus.io', password: 'Reviewer123!' },
@@ -74,7 +102,8 @@ export const AuthProvider = ({ children }) => {
         user,
         token,
         loading,
-        isAuthenticated: !!user && !!token,
+        isAuthenticated: PUBLIC_DEMO_MODE ? true : (!!user && !!token),
+        isDemoMode: PUBLIC_DEMO_MODE,
         login,
         register,
         logout,
