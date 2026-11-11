@@ -31,14 +31,24 @@ export const DEMO_USERS = {
   }
 };
 
+// Accurately reflects the curated demo submissions: 1 approved, 2 in review (1 ai_reviewed + 1 in_review)
 export const DEMO_STATS = {
-  totalSubmissions: 14,
-  pendingReview: 3,
-  aiFlaggedIssues: 28,
-  highSeverityFlags: 6,
-  approvedCount: 9,
-  changesRequestedCount: 2,
-  complianceRate: 85
+  totalSubmissions: 3,
+  approvedSubmissions: 1,
+  inReviewSubmissions: 2,
+  changesRequested: 0,
+  draftSubmissions: 0,
+  totalFindings: 6,
+  highSeverityFlags: 2,
+  dismissedFindings: 1,
+  acceptedFindings: 0,
+  averageGovernanceScore: 71,
+  // Backward compatibility aliases
+  pendingReview: 2,
+  approvedCount: 1,
+  changesRequestedCount: 0,
+  aiFlaggedIssues: 6,
+  complianceRate: 71
 };
 
 export const DEMO_CONTENTS = [
@@ -61,13 +71,13 @@ export const DEMO_CONTENTS = [
   },
   {
     _id: 'demo-submission-2',
-    title: 'Hydration Blast Product One-Pager',
-    contentType: 'Marketing Flyer',
-    campaign: 'Q2 Product Launch',
+    title: 'Valencia Orange - Morning Energy Ad Copy',
+    contentType: 'Marketing Ad Copy',
+    campaign: 'Daily Nutrition 2026',
     status: 'in_review',
     currentVersion: 1,
-    governanceScore: 88,
-    totalFindings: 1,
+    governanceScore: 74,
+    totalFindings: 2,
     creator: {
       name: 'Priya Sharma (Creator)',
       email: 'creator@freshplus.io'
@@ -78,9 +88,9 @@ export const DEMO_CONTENTS = [
   },
   {
     _id: 'demo-submission-3',
-    title: 'Eco-Friendly Packaging Press Release',
-    contentType: 'Press Release',
-    campaign: 'Sustainability 2026',
+    title: 'Pure Valencia Orange - Retail Pack Description',
+    contentType: 'Packaging Copy',
+    campaign: 'Retail Packaging 2026',
     status: 'approved',
     currentVersion: 2,
     governanceScore: 98,
@@ -92,140 +102,229 @@ export const DEMO_CONTENTS = [
     organization: 'FreshPlus Global',
     createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
     updatedAt: new Date(Date.now() - 86400000 * 2).toISOString()
-  },
-  {
-    _id: 'demo-submission-4',
-    title: 'Festival Mega Discount Promo Email',
-    contentType: 'Email Newsletter',
-    campaign: 'Diwali Mega Sale',
-    status: 'changes_requested',
-    currentVersion: 1,
-    governanceScore: 55,
-    totalFindings: 3,
-    creator: {
-      name: 'Priya Sharma (Creator)',
-      email: 'creator@freshplus.io'
-    },
-    organization: 'FreshPlus Global',
-    createdAt: new Date(Date.now() - 86400000 * 4).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 4).toISOString()
-  },
-  {
-    _id: 'demo-submission-5',
-    title: 'Executive Thought Leadership Piece',
-    contentType: 'Executive Post',
-    campaign: 'Brand Leadership',
-    status: 'approved',
-    currentVersion: 1,
-    governanceScore: 100,
-    totalFindings: 0,
-    creator: {
-      name: 'Rohan Deshmukh (Manager)',
-      email: 'manager@freshplus.io'
-    },
-    organization: 'FreshPlus Global',
-    createdAt: new Date(Date.now() - 86400000 * 6).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 5).toISOString()
   }
 ];
 
-export const DEMO_SUBMISSION_DETAILS = {
-  content: DEMO_CONTENTS[0],
-  currentVersion: {
-    _id: 'ver-1',
-    contentId: 'demo-submission-1',
-    versionNumber: 1,
-    rawText: "Fresh+ cures fatigue instantly! India's No. 1 juice is finally here. Buy now!!!",
-    changeNotes: 'Initial draft submitted for pre-publication governance review',
-    aiReviewCompleted: true,
-    governanceScore: 42,
-    totalFindings: 4,
-    createdAt: new Date(Date.now() - 3600000 * 2).toISOString()
-  },
-  allVersions: [
-    {
-      _id: 'ver-1',
+// Rich, realistic details for each submission in the review studio
+export const DEMO_SUBMISSIONS_MAP = {
+  'demo-submission-1': {
+    content: DEMO_CONTENTS[0],
+    currentVersion: {
+      _id: 'ver-1-1',
+      contentId: 'demo-submission-1',
       versionNumber: 1,
       rawText: "Fresh+ cures fatigue instantly! India's No. 1 juice is finally here. Buy now!!!",
       changeNotes: 'Initial draft submitted for pre-publication governance review',
+      aiReviewCompleted: true,
       governanceScore: 42,
+      totalFindings: 4,
       createdAt: new Date(Date.now() - 3600000 * 2).toISOString()
     },
-    {
-      _id: 'ver-2',
-      versionNumber: 2,
-      rawText: "FreshPlus delivers refreshing natural hydration! Our refreshing fruit juice is finally here. Shop now.",
-      changeNotes: 'Revised copy applying AI governance suggestions and removing unsupported claims',
-      governanceScore: 96,
-      createdAt: new Date(Date.now() - 3600000 * 1).toISOString()
-    }
-  ],
-  findings: [
-    {
-      _id: 'f1',
-      category: 'Brand Terminology',
-      severity: 'high',
-      excerpt: 'Fresh+',
-      reason: 'The prohibited term "Fresh+" violates brand guidelines. The approved and legally registered name is "FreshPlus". Never separate the words or substitute "+" for "Plus".',
-      evidenceStatus: 'contradicted',
-      sourceIds: ['GUIDE-001', 'TERM-001'],
-      sourceExcerpt: 'The preferred and legally registered product name is "FreshPlus". Prohibited: Fresh+, Fresh Plus, FRESH+.',
-      suggestedRewrite: 'FreshPlus',
-      confidence: 0.98,
-      decision: 'pending'
-    },
-    {
-      _id: 'f2',
-      category: 'Unsupported Claim',
-      severity: 'high',
-      excerpt: 'cures fatigue instantly!',
-      reason: 'All statements asserting curative, medicinal, disease prevention, or instant stamina outcomes are strictly prohibited unless substantiated by an approved clinical fact in the brand repository.',
-      evidenceStatus: 'contradicted',
-      sourceIds: ['GUIDE-002'],
-      sourceExcerpt: 'Do not use unsupported health benefit claims. Instant stamina and disease curative claims violate regulatory guidelines.',
-      suggestedRewrite: 'delivers daily refreshment',
-      confidence: 0.96,
-      decision: 'pending'
-    },
-    {
-      _id: 'f3',
-      category: 'Promotional Claim',
-      severity: 'medium',
-      excerpt: "India's No. 1",
-      reason: 'Promotional superlatives such as "India\'s No. 1" or market dominance assertions require documented, independently verified market share evidence in the brand repository before publication.',
-      evidenceStatus: 'contradicted',
-      sourceIds: ['GUIDE-003'],
-      sourceExcerpt: 'Promotional superlatives require documented evidence in the brand repository before publication.',
-      suggestedRewrite: 'a refreshing fruit juice',
-      confidence: 0.92,
-      decision: 'pending'
-    },
-    {
-      _id: 'f4',
-      category: 'Brand Style & Tone',
-      severity: 'low',
-      excerpt: 'Buy now!!!',
-      reason: 'Multiple exclamation points (!!!) and aggressive promotional shouting violate our refined editorial voice standards.',
-      evidenceStatus: 'flagged',
-      sourceIds: ['GUIDE-004'],
-      sourceExcerpt: 'Maintain a clean, premium, trustworthy editorial voice. Avoid multiple exclamation marks and aggressive clickbait.',
-      suggestedRewrite: 'Shop now.',
-      confidence: 0.89,
-      decision: 'pending'
-    }
-  ],
-  comments: [
-    {
-      _id: 'comm-1',
-      user: {
-        _id: 'demo-reviewer-id',
-        name: 'Arjun Mehta (Reviewer)',
-        role: 'reviewer'
+    allVersions: [
+      {
+        _id: 'ver-1-1',
+        versionNumber: 1,
+        rawText: "Fresh+ cures fatigue instantly! India's No. 1 juice is finally here. Buy now!!!",
+        changeNotes: 'Initial draft submitted for pre-publication governance review',
+        governanceScore: 42,
+        createdAt: new Date(Date.now() - 3600000 * 2).toISOString()
       },
-      text: 'Priya, please adopt the approved "FreshPlus" spelling and replace the instant cure claim with our validated 24mg Vitamin C energy benefit before we can approve this for publication.',
-      createdAt: new Date(Date.now() - 3600000 * 1.5).toISOString()
-    }
-  ]
+      {
+        _id: 'ver-1-2',
+        versionNumber: 2,
+        rawText: "FreshPlus delivers refreshing daily refreshment! Our refreshing fruit juice is finally here. Shop now.",
+        changeNotes: 'Revised copy applying AI governance suggestions and removing ungrounded claims',
+        governanceScore: 96,
+        createdAt: new Date(Date.now() - 3600000 * 1).toISOString()
+      }
+    ],
+    findings: [
+      {
+        _id: 'f1-1',
+        category: 'Brand Terminology',
+        severity: 'high',
+        excerpt: 'Fresh+',
+        reason: 'The prohibited term "Fresh+" violates brand guidelines. The approved and legally registered name is "FreshPlus". Never separate the words or substitute "+" for "Plus".',
+        evidenceStatus: 'contradicted',
+        sourceIds: ['GUIDE-001', 'TERM-001'],
+        sourceExcerpt: 'The preferred and legally registered product name is "FreshPlus". Prohibited: Fresh+, Fresh Plus, FRESH+.',
+        suggestedRewrite: 'FreshPlus',
+        confidence: 0.98,
+        decision: 'pending'
+      },
+      {
+        _id: 'f1-2',
+        category: 'Unsupported Claim',
+        severity: 'high',
+        excerpt: 'cures fatigue instantly!',
+        reason: 'All statements asserting curative, medicinal, disease prevention, or instant stamina outcomes are strictly prohibited unless substantiated by an approved clinical fact in the brand repository.',
+        evidenceStatus: 'contradicted',
+        sourceIds: ['GUIDE-002'],
+        sourceExcerpt: 'Do not use unsupported health benefit claims. Curative, medicinal, or instant disease outcomes are strictly prohibited.',
+        suggestedRewrite: 'delivers daily refreshment',
+        confidence: 0.96,
+        decision: 'pending'
+      },
+      {
+        _id: 'f1-3',
+        category: 'Promotional Claim',
+        severity: 'medium',
+        excerpt: "India's No. 1",
+        reason: 'Promotional superlatives such as "India\'s No. 1" or market dominance assertions require documented, independently verified market share audit evidence in the brand repository before publication.',
+        evidenceStatus: 'contradicted',
+        sourceIds: ['GUIDE-003'],
+        sourceExcerpt: 'Promotional superlatives and performance guarantees require documented evidence in the brand repository before publication.',
+        suggestedRewrite: 'a refreshing fruit juice',
+        confidence: 0.92,
+        decision: 'pending'
+      },
+      {
+        _id: 'f1-4',
+        category: 'Brand Style & Tone',
+        severity: 'low',
+        excerpt: 'Buy now!!!',
+        reason: 'Multiple exclamation points (!!!) and aggressive promotional shouting violate our refined editorial voice standards.',
+        evidenceStatus: 'flagged',
+        sourceIds: ['GUIDE-004'],
+        sourceExcerpt: 'Maintain a clean, premium, trustworthy editorial voice. Avoid multiple exclamation marks and aggressive clickbait.',
+        suggestedRewrite: 'Shop now.',
+        confidence: 0.89,
+        decision: 'pending'
+      }
+    ],
+    comments: [
+      {
+        _id: 'comm-1-1',
+        user: {
+          _id: 'demo-reviewer-id',
+          name: 'Arjun Mehta (Reviewer)',
+          role: 'reviewer'
+        },
+        text: 'Priya, please adopt the approved "FreshPlus" spelling, remove the instant cure claim, and tone down the promotional superlatives before we can approve this for publication.',
+        createdAt: new Date(Date.now() - 3600000 * 1.5).toISOString()
+      }
+    ]
+  },
+  'demo-submission-2': {
+    content: DEMO_CONTENTS[1],
+    currentVersion: {
+      _id: 'ver-2-1',
+      contentId: 'demo-submission-2',
+      versionNumber: 1,
+      rawText: "Drink FreshPlus every morning for guaranteed 100% natural energy. The best juice in India to power through workdays.",
+      changeNotes: 'Initial draft for Q2 digital campaign',
+      aiReviewCompleted: true,
+      governanceScore: 74,
+      totalFindings: 2,
+      createdAt: new Date(Date.now() - 86400000 * 1).toISOString()
+    },
+    allVersions: [
+      {
+        _id: 'ver-2-1',
+        versionNumber: 1,
+        rawText: "Drink FreshPlus every morning for guaranteed 100% natural energy. The best juice in India to power through workdays.",
+        changeNotes: 'Initial draft for Q2 digital campaign',
+        governanceScore: 74,
+        createdAt: new Date(Date.now() - 86400000 * 1).toISOString()
+      }
+    ],
+    findings: [
+      {
+        _id: 'f2-1',
+        category: 'Promotional Claim',
+        severity: 'medium',
+        excerpt: 'guaranteed 100% natural energy',
+        reason: 'Promotional guarantees violate fair advertising standards without verified clinical documentation in the brand repository.',
+        evidenceStatus: 'contradicted',
+        sourceIds: ['GUIDE-003'],
+        sourceExcerpt: 'Promotional superlatives and performance guarantees require documented evidence in the brand repository before publication.',
+        suggestedRewrite: 'refreshing natural energy',
+        confidence: 0.94,
+        decision: 'pending'
+      },
+      {
+        _id: 'f2-2',
+        category: 'Promotional Claim',
+        severity: 'medium',
+        excerpt: 'best juice in India',
+        reason: 'Promotional superlatives such as "best juice in India" require documented, independently verified market share audit evidence before publication.',
+        evidenceStatus: 'contradicted',
+        sourceIds: ['GUIDE-003'],
+        sourceExcerpt: 'Promotional superlatives such as "India\'s No. 1", "Best in the world", or market leadership claims require documented, verified evidence in the brand repository before publication.',
+        suggestedRewrite: 'a delicious citrus juice',
+        confidence: 0.93,
+        decision: 'pending'
+      }
+    ],
+    comments: [
+      {
+        _id: 'comm-2-1',
+        user: {
+          _id: 'demo-reviewer-id',
+          name: 'Arjun Mehta (Reviewer)',
+          role: 'reviewer'
+        },
+        text: 'Please soften the "guaranteed" wording and reference our approved FACT-002 (24mg natural Vitamin C) instead of calling it the best juice in India.',
+        createdAt: new Date(Date.now() - 3600000 * 18).toISOString()
+      }
+    ]
+  },
+  'demo-submission-3': {
+    content: DEMO_CONTENTS[2],
+    currentVersion: {
+      _id: 'ver-3-2',
+      contentId: 'demo-submission-3',
+      versionNumber: 2,
+      rawText: "FreshPlus 100% Pure Pasteurized Orange Juice contains zero added sugar and delivers 24mg of natural Vitamin C per 100ml. Bottled in 100% recyclable rPET.",
+      changeNotes: 'Adopted approved facts FACT-001, FACT-002, and FACT-003',
+      aiReviewCompleted: true,
+      governanceScore: 98,
+      totalFindings: 0,
+      createdAt: new Date(Date.now() - 86400000 * 2).toISOString()
+    },
+    allVersions: [
+      {
+        _id: 'ver-3-1',
+        versionNumber: 1,
+        rawText: "Fresh Plus pure juice with natural energy.",
+        changeNotes: 'First draft',
+        governanceScore: 78,
+        createdAt: new Date(Date.now() - 86400000 * 3).toISOString()
+      },
+      {
+        _id: 'ver-3-2',
+        versionNumber: 2,
+        rawText: "FreshPlus 100% Pure Pasteurized Orange Juice contains zero added sugar and delivers 24mg of natural Vitamin C per 100ml. Bottled in 100% recyclable rPET.",
+        changeNotes: 'Corrected terminology to FreshPlus and cited verified facts',
+        governanceScore: 98,
+        createdAt: new Date(Date.now() - 86400000 * 2).toISOString()
+      }
+    ],
+    findings: [],
+    comments: [
+      {
+        _id: 'comm-3-1',
+        user: {
+          _id: 'demo-reviewer-id',
+          name: 'Arjun Mehta (Reviewer)',
+          role: 'reviewer'
+        },
+        text: '[APPROVED]: Fully verified against GUIDE-001, FACT-001, FACT-002, and FACT-003. Approved for commercial retail packaging.',
+        createdAt: new Date(Date.now() - 86400000 * 2).toISOString()
+      }
+    ]
+  }
+};
+
+// Default submission details pointing to submission 1
+export const DEMO_SUBMISSION_DETAILS = DEMO_SUBMISSIONS_MAP['demo-submission-1'];
+
+// Helper to look up submission details dynamically by ID
+export const getDemoSubmissionDetails = (id) => {
+  if (id && DEMO_SUBMISSIONS_MAP[id]) {
+    return DEMO_SUBMISSIONS_MAP[id];
+  }
+  return DEMO_SUBMISSION_DETAILS;
 };
 
 export const DEMO_GUIDELINES = [
@@ -294,9 +393,9 @@ export const DEMO_TERMINOLOGY = [
   {
     _id: 't2',
     terminologyId: 'TERM-002',
-    preferredTerm: '100% Cold-Pressed Natural Juice',
-    prohibitedTerms: ['Processed Drink', 'Juice Beverage', 'Flavored Drink'],
-    explanation: 'Emphasize cold-pressed extraction technique and raw purity.',
+    preferredTerm: '100% Pure Pasteurized Juice',
+    prohibitedTerms: ['Orange Soda', 'Synthetic Orange', 'Fruit Concentrate Drink', 'Orange Squash'],
+    explanation: 'FreshPlus is 100% pure pasteurized juice, not a diluted concentrate or synthetic carbonated soda.',
     category: 'Ingredient Quality',
     severity: 'medium'
   },
@@ -369,54 +468,99 @@ export const DEMO_ASSETS = [
 ];
 
 export const DEMO_ANALYTICS_FINDINGS = {
-  totalFindings: 28,
+  totalFindings: 6,
   byCategory: [
-    { category: 'Brand Terminology', count: 11 },
-    { category: 'Unsupported Claim', count: 8 },
-    { category: 'Promotional Claim', count: 5 },
-    { category: 'Brand Style & Tone', count: 4 }
+    { category: 'Brand Terminology', count: 1 },
+    { category: 'Unsupported Claim', count: 1 },
+    { category: 'Promotional Claim', count: 3 },
+    { category: 'Brand Style & Tone', count: 1 }
   ],
   bySeverity: [
-    { severity: 'high', count: 14 },
-    { severity: 'medium', count: 9 },
-    { severity: 'low', count: 5 }
+    { severity: 'high', count: 2 },
+    { severity: 'medium', count: 3 },
+    { severity: 'low', count: 1 }
+  ],
+  byEvidenceStatus: [
+    { status: 'contradicted', count: 4 },
+    { status: 'flagged', count: 2 }
+  ],
+  byDecision: [
+    { decision: 'pending', count: 5 },
+    { decision: 'dismissed', count: 1 }
   ],
   dismissedFindings: [
     {
       _id: 'df1',
-      excerpt: 'Natural vitality boost',
-      dismissReason: 'Pre-approved in seasonal campaign brief under medical reviewer sign-off',
-      dismissedBy: { name: 'Rohan Deshmukh (Manager)' },
-      createdAt: new Date(Date.now() - 86400000 * 2).toISOString()
+      category: 'Brand Style & Tone',
+      excerpt: 'Naturally refreshing!',
+      dismissReason: 'Exclamation mark permitted for seasonal social taglines per marketing director approval',
+      dismissalReason: 'Exclamation mark permitted for seasonal social taglines per marketing director approval',
+      dismissedBy: { name: 'Arjun Mehta (Reviewer)' },
+      createdAt: new Date(Date.now() - 86400000 * 1).toISOString()
     }
   ]
 };
 
 export const DEMO_ANALYTICS_RULES = {
+  frequentlyTriggeredRules: [
+    {
+      ruleId: 'GUIDE-003',
+      count: 3,
+      title: 'Promotional Superlatives and Market Dominance Claims',
+      category: 'Promotional Claim'
+    },
+    {
+      ruleId: 'GUIDE-001',
+      count: 1,
+      title: 'Approved Product Name Spelling',
+      category: 'Brand Terminology'
+    },
+    {
+      ruleId: 'GUIDE-002',
+      count: 1,
+      title: 'Prohibition of Unsupported Health Claims',
+      category: 'Unsupported Claim'
+    },
+    {
+      ruleId: 'GUIDE-004',
+      count: 1,
+      title: 'Brand Tone and Voice Consistency',
+      category: 'Brand Style & Tone'
+    }
+  ],
   topTriggeredRules: [
+    {
+      guidelineId: 'GUIDE-003',
+      title: 'Promotional Superlatives and Market Dominance Claims',
+      triggerCount: 3,
+      category: 'Promotional Claim'
+    },
     {
       guidelineId: 'GUIDE-001',
       title: 'Approved Product Name Spelling',
-      triggerCount: 11,
+      triggerCount: 1,
       category: 'Brand Terminology'
     },
     {
       guidelineId: 'GUIDE-002',
       title: 'Prohibition of Unsupported Health Claims',
-      triggerCount: 8,
+      triggerCount: 1,
       category: 'Unsupported Claim'
-    },
-    {
-      guidelineId: 'GUIDE-003',
-      title: 'Promotional Superlatives and Market Dominance Claims',
-      triggerCount: 5,
-      category: 'Promotional Claim'
     },
     {
       guidelineId: 'GUIDE-004',
       title: 'Brand Tone and Voice Consistency',
-      triggerCount: 4,
+      triggerCount: 1,
       category: 'Brand Style & Tone'
+    }
+  ],
+  recentDismissals: [
+    {
+      _id: 'df1',
+      category: 'Brand Style & Tone',
+      excerpt: 'Naturally refreshing!',
+      dismissalReason: 'Exclamation mark permitted for seasonal social taglines per marketing director approval',
+      createdAt: new Date(Date.now() - 86400000 * 1).toISOString()
     }
   ]
 };
@@ -429,7 +573,7 @@ export const DEMO_AUDIT_LOGS = [
     action: 'CONTENT_APPROVED',
     targetResource: 'Content',
     targetId: 'demo-submission-3',
-    details: { title: 'Eco-Friendly Packaging Press Release', campaign: 'Sustainability 2026' },
+    details: { title: 'Pure Valencia Orange - Retail Pack Description', campaign: 'Retail Packaging 2026' },
     createdAt: new Date(Date.now() - 3600000 * 1).toISOString()
   },
   {
@@ -438,28 +582,28 @@ export const DEMO_AUDIT_LOGS = [
     role: 'reviewer',
     action: 'COMMENT_ADDED',
     targetResource: 'Content',
-    targetId: 'demo-submission-1',
-    details: { comment: 'Requested terminology and health claim correction' },
-    createdAt: new Date(Date.now() - 3600000 * 1.5).toISOString()
+    targetId: 'demo-submission-2',
+    details: { comment: 'Requested softening of promotional guarantee' },
+    createdAt: new Date(Date.now() - 3600000 * 18).toISOString()
   },
   {
     _id: 'log-3',
-    userEmail: 'creator@freshplus.io',
-    role: 'creator',
-    action: 'CONTENT_SUBMITTED',
-    targetResource: 'Content',
-    targetId: 'demo-submission-1',
-    details: { title: 'Summer Launch Campaign - Social Teaser', campaign: 'Summer Launch 2026' },
-    createdAt: new Date(Date.now() - 3600000 * 2).toISOString()
-  },
-  {
-    _id: 'log-4',
     userEmail: 'system@inkloomguard.xyz',
     role: 'system',
     action: 'AI_REVIEW_COMPLETED',
     targetResource: 'Content',
     targetId: 'demo-submission-1',
     details: { totalFindings: 4, governanceScore: 42 },
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString()
+  },
+  {
+    _id: 'log-4',
+    userEmail: 'creator@freshplus.io',
+    role: 'creator',
+    action: 'CONTENT_SUBMITTED',
+    targetResource: 'Content',
+    targetId: 'demo-submission-1',
+    details: { title: 'Summer Launch Campaign - Social Teaser', campaign: 'Summer Launch 2026' },
     createdAt: new Date(Date.now() - 3600000 * 2.1).toISOString()
   },
   {
@@ -490,12 +634,15 @@ export const recordDemoAuditLog = ({ action, user, targetId, details }) => {
   return newLog;
 };
 
-// Helper to update demo content status in memory
+// Helper to update demo content status in memory across records
 export const updateDemoContentStatus = (id, newStatus) => {
   const match = DEMO_CONTENTS.find(c => c._id === id);
   if (match) {
     match.status = newStatus;
     match.updatedAt = new Date().toISOString();
+  }
+  if (DEMO_SUBMISSIONS_MAP[id]?.content) {
+    DEMO_SUBMISSIONS_MAP[id].content.status = newStatus;
   }
   if (DEMO_SUBMISSION_DETAILS.content && DEMO_SUBMISSION_DETAILS.content._id === id) {
     DEMO_SUBMISSION_DETAILS.content.status = newStatus;
@@ -553,12 +700,12 @@ export const analyzeDemoText = (text) => {
     },
     {
       prohibited: 'Processed Drink',
-      preferred: '100% Cold-Pressed Natural Juice',
+      preferred: '100% Pure Pasteurized Juice',
       category: 'Brand Terminology',
       severity: 'medium',
       guideId: 'GUIDE-001',
       termId: 'TERM-002',
-      reason: 'Emphasize cold-pressed extraction technique and raw purity.'
+      reason: 'Emphasize pure pasteurized extraction technique and raw fruit purity.'
     },
     {
       prohibited: 'Sugar Free',
@@ -643,9 +790,15 @@ export const analyzeDemoText = (text) => {
       sourceId: 'GUIDE-003'
     },
     {
-      regex: /(guaranteed\s+results?!?)/i,
+      regex: /(best\s+juice\s+in\s+India|world's\s+best\s+juice)/i,
+      reason: 'Promotional superlatives such as "best juice in India" require documented, verified market share evidence in the brand repository before publication.',
+      rewrite: 'a delicious citrus juice',
+      sourceId: 'GUIDE-003'
+    },
+    {
+      regex: /(guaranteed\s+(?:100%\s+)?natural\s+energy|guaranteed\s+results?!?)/i,
       reason: 'Absolute promotional guarantees violate fair advertising practice and brand communication standards.',
-      rewrite: 'quality you can taste every day',
+      rewrite: 'refreshing natural energy',
       sourceId: 'GUIDE-003'
     }
   ];
@@ -728,22 +881,26 @@ export const saveCustomDemoSubmission = (formData) => {
 
   DEMO_CONTENTS.unshift(newSubmission);
 
-  // Update active studio details
-  DEMO_SUBMISSION_DETAILS.content = newSubmission;
-  DEMO_SUBMISSION_DETAILS.currentVersion = {
-    _id: `ver-${Date.now()}`,
-    contentId: newSubmission._id,
-    versionNumber: 1,
-    rawText: formData.rawText,
-    changeNotes: 'Submitted for pre-publication governance review',
-    aiReviewCompleted: !!formData.autoReview,
-    governanceScore: formData.autoReview ? analysis.score : null,
-    totalFindings: formData.autoReview ? analysis.findings.length : 0,
-    createdAt: new Date().toISOString()
+  const customDetails = {
+    content: newSubmission,
+    currentVersion: {
+      _id: `ver-${Date.now()}`,
+      contentId: newSubmission._id,
+      versionNumber: 1,
+      rawText: formData.rawText,
+      changeNotes: 'Submitted for pre-publication governance review',
+      aiReviewCompleted: !!formData.autoReview,
+      governanceScore: formData.autoReview ? analysis.score : null,
+      totalFindings: formData.autoReview ? analysis.findings.length : 0,
+      createdAt: new Date().toISOString()
+    },
+    allVersions: [],
+    findings: formData.autoReview ? analysis.findings : [],
+    comments: []
   };
-  DEMO_SUBMISSION_DETAILS.allVersions = [DEMO_SUBMISSION_DETAILS.currentVersion];
-  DEMO_SUBMISSION_DETAILS.findings = formData.autoReview ? analysis.findings : [];
-  DEMO_SUBMISSION_DETAILS.comments = [];
+  customDetails.allVersions = [customDetails.currentVersion];
+
+  DEMO_SUBMISSIONS_MAP[newSubmission._id] = customDetails;
 
   recordDemoAuditLog({
     action: 'CONTENT_SUBMITTED (Demo)',
@@ -753,4 +910,3 @@ export const saveCustomDemoSubmission = (formData) => {
 
   return newSubmission;
 };
-

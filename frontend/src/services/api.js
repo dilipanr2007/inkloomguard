@@ -3,6 +3,7 @@ import {
   DEMO_STATS,
   DEMO_CONTENTS,
   DEMO_SUBMISSION_DETAILS,
+  getDemoSubmissionDetails,
   DEMO_GUIDELINES,
   DEMO_TERMINOLOGY,
   DEMO_FACTS,
@@ -40,13 +41,18 @@ const getDemoResponse = (config) => {
       return DEMO_ANALYTICS_RULES;
     }
     if (url.includes('/content') && url.includes('/compare')) {
+      const match = url.match(/\/content\/([a-zA-Z0-9_-]+)\/compare/);
+      const subId = match ? match[1] : 'demo-submission-1';
+      const details = getDemoSubmissionDetails(subId);
       return {
-        v1: DEMO_SUBMISSION_DETAILS.allVersions[0],
-        v2: DEMO_SUBMISSION_DETAILS.allVersions[1]
+        v1: details.allVersions?.[0] || details.currentVersion,
+        v2: details.allVersions?.[1] || details.currentVersion
       };
     }
-    if (url.match(/\/content\/[a-zA-Z0-9_-]+/)) {
-      return DEMO_SUBMISSION_DETAILS;
+    const singleContentMatch = url.match(/\/content\/([a-zA-Z0-9_-]+)$/);
+    if (singleContentMatch) {
+      const subId = singleContentMatch[1];
+      return getDemoSubmissionDetails(subId);
     }
     if (url.includes('/content')) {
       let filtered = [...DEMO_CONTENTS];
@@ -83,39 +89,44 @@ const getDemoResponse = (config) => {
   // Safe In-Memory Demo Mutations: Handle locally without calling production backend
   if (method === 'post') {
     if (url.includes('/approve')) {
-      updateDemoContentStatus('demo-submission-1', 'approved');
+      const subId = url.match(/\/content\/([a-zA-Z0-9_-]+)\/approve/)?.[1] || 'demo-submission-1';
+      updateDemoContentStatus(subId, 'approved');
       recordDemoAuditLog({
         action: 'CONTENT_APPROVED (Demo)',
-        targetId: 'demo-submission-1',
+        targetId: subId,
         details: { note: 'Approved in Demo Mode' }
       });
       return { success: true, message: 'Content approved in demo mode.' };
     }
     if (url.includes('/request-changes')) {
-      updateDemoContentStatus('demo-submission-1', 'changes_requested');
+      const subId = url.match(/\/content\/([a-zA-Z0-9_-]+)\/request-changes/)?.[1] || 'demo-submission-1';
+      updateDemoContentStatus(subId, 'changes_requested');
       recordDemoAuditLog({
         action: 'CHANGES_REQUESTED (Demo)',
-        targetId: 'demo-submission-1',
+        targetId: subId,
         details: { note: 'Changes requested in demo mode' }
       });
       return { success: true, message: 'Changes requested in demo mode.' };
     }
     if (url.includes('/reject')) {
-      updateDemoContentStatus('demo-submission-1', 'rejected');
+      const subId = url.match(/\/content\/([a-zA-Z0-9_-]+)\/reject/)?.[1] || 'demo-submission-1';
+      updateDemoContentStatus(subId, 'rejected');
       recordDemoAuditLog({
         action: 'CONTENT_REJECTED (Demo)',
-        targetId: 'demo-submission-1',
+        targetId: subId,
         details: { note: 'Rejected in demo mode' }
       });
       return { success: true, message: 'Content rejected in demo mode.' };
     }
     if (url.includes('/review')) {
-      const text = DEMO_SUBMISSION_DETAILS.currentVersion?.rawText || '';
+      const subId = url.match(/\/content\/([a-zA-Z0-9_-]+)\/review/)?.[1] || 'demo-submission-1';
+      const details = getDemoSubmissionDetails(subId);
+      const text = details.currentVersion?.rawText || '';
       const analysis = analyzeDemoText(text);
-      DEMO_SUBMISSION_DETAILS.currentVersion.governanceScore = analysis.score;
-      DEMO_SUBMISSION_DETAILS.currentVersion.totalFindings = analysis.findings.length;
-      DEMO_SUBMISSION_DETAILS.currentVersion.aiReviewCompleted = true;
-      DEMO_SUBMISSION_DETAILS.findings = analysis.findings;
+      details.currentVersion.governanceScore = analysis.score;
+      details.currentVersion.totalFindings = analysis.findings.length;
+      details.currentVersion.aiReviewCompleted = true;
+      details.findings = analysis.findings;
       return {
         success: true,
         findings: analysis.findings,
