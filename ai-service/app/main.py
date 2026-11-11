@@ -119,17 +119,25 @@ def review_content(request: ReviewRequest):
     )
     findings.extend(tone_heuristics)
 
-    # 4. Vector Retrieval for Content
-    retrieved_chunks = global_vector_index.retrieve(cleaned_text, top_k=5)
+    # 4. Vector Retrieval for Content (grounded on sanitized text without PII)
+    retrieved_chunks = global_vector_index.retrieve(redacted_text, top_k=5)
 
-    # 5. LLM Tone & Claim Analysis
+    # 5. LLM Tone & Claim Analysis (strictly receives redacted text only)
     llm_findings = llm_reviewer.analyze_content(
-        submitted_text=request.submitted_text,
+        submitted_text=redacted_text,
         content_type=request.content_type or "General Marketing",
         retrieved_context=retrieved_chunks,
         all_guidelines=guidelines_list,
         all_facts=facts_list
     )
+
+    # Restore any redaction placeholders in excerpts/suggestions back to original text
+    if redactions:
+        llm_findings = TextPreprocessor.restore_pii_in_findings(
+            findings=llm_findings,
+            original_text=request.submitted_text,
+            redactions=redactions
+        )
     findings.extend(llm_findings)
 
     # 6. Verification and Validation Layer
@@ -142,7 +150,9 @@ def review_content(request: ReviewRequest):
         submitted_text=request.submitted_text,
         valid_source_ids=valid_source_ids,
         approved_facts=facts_list,
-        prohibited_terms=prohibited_terms
+        prohibited_terms=prohibited_terms,
+        redacted_text=redacted_text,
+        redactions=redactions
     )
 
     # 7. Calculate Governance Health Score (0 - 100)

@@ -95,15 +95,22 @@ class FindingValidator:
         submitted_text: str,
         valid_source_ids: Set[str],
         approved_facts: Optional[List[Dict[str, Any]]] = None,
-        prohibited_terms: Optional[List[str]] = None
+        prohibited_terms: Optional[List[str]] = None,
+        redacted_text: Optional[str] = None,
+        redactions: Optional[List[str]] = None
     ) -> List[FindingItem]:
         validated = []
         seen_excerpts = set()
 
         for f in findings:
-            # 1. Excerpt presence check (must exist in original submitted text)
-            if f.excerpt not in submitted_text and f.excerpt.lower() not in submitted_text.lower():
-                # Discard finding if the excerpt was invented and does not occur in text
+            # 1. Reject any finding where internal redaction placeholders failed to restore
+            if "[REDACTED_" in f.excerpt:
+                continue
+
+            # Excerpt presence check: must exist in original submitted text
+            in_submitted = (f.excerpt in submitted_text) or (f.excerpt.lower() in submitted_text.lower())
+            if not in_submitted:
+                # Discard finding if the excerpt was invented or does not occur in text
                 continue
 
             # Deduplicate multiple findings on identical excerpt
