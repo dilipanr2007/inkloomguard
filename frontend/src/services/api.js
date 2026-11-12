@@ -5,6 +5,9 @@ import {
   DEMO_SUBMISSION_DETAILS,
   getDemoSubmissionDetails,
   DEMO_GUIDELINES,
+  DEMO_INTERNAL_GUIDELINES,
+  DEMO_REGULATORY,
+  DEMO_PRODUCTS,
   DEMO_TERMINOLOGY,
   DEMO_FACTS,
   DEMO_ASSETS,
@@ -65,7 +68,17 @@ const getDemoResponse = (config) => {
       return { contents: filtered };
     }
     if (url.includes('/guidelines')) {
-      return { guidelines: DEMO_GUIDELINES };
+      return {
+        guidelines: DEMO_GUIDELINES,
+        internalGuidelines: DEMO_INTERNAL_GUIDELINES,
+        regulatory: DEMO_REGULATORY
+      };
+    }
+    if (url.includes('/regulatory')) {
+      return { regulatory: DEMO_REGULATORY };
+    }
+    if (url.includes('/products')) {
+      return { products: DEMO_PRODUCTS };
     }
     if (url.includes('/terminology')) {
       return { terminology: DEMO_TERMINOLOGY };
@@ -84,6 +97,31 @@ const getDemoResponse = (config) => {
       return { user: DEMO_USERS[savedRole] || DEMO_USERS.manager };
     }
     return null;
+  }
+
+  // Handle Onboarding Preferences Updates in Demo Mode
+  if (method === 'patch' || method === 'post') {
+    if (url.includes('/auth/onboarding')) {
+      let body = {};
+      try {
+        body = typeof config.data === 'string' ? JSON.parse(config.data || '{}') : (config.data || {});
+      } catch (e) {
+        body = {};
+      }
+      const savedRole = localStorage.getItem('inkloom_demo_role') || 'manager';
+      if (DEMO_USERS[savedRole]) {
+        DEMO_USERS[savedRole].onboarding = {
+          completed: body.completed !== undefined ? Boolean(body.completed) : DEMO_USERS[savedRole].onboarding?.completed || false,
+          skipped: body.skipped !== undefined ? Boolean(body.skipped) : DEMO_USERS[savedRole].onboarding?.skipped || false,
+          version: body.version || 1
+        };
+      }
+      return {
+        success: true,
+        onboarding: DEMO_USERS[savedRole]?.onboarding,
+        message: 'Onboarding updated in demo mode.'
+      };
+    }
   }
 
   // Safe In-Memory Demo Mutations: Handle locally without calling production backend
@@ -179,7 +217,7 @@ const demoAdapter = async (config) => {
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 20000, // 20s timeout to prevent hanging promises
+  timeout: 20000,
   adapter: demoAdapter,
   headers: {
     'Content-Type': 'application/json'

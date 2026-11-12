@@ -5,7 +5,7 @@ import { DEMO_USERS } from '../services/demoData';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  // If Public Demo Mode is active, initialize immediately with demo manager profile
+  // If Public Demo Mode is active, initialize immediately with demo profile
   const [user, setUser] = useState(() => {
     if (PUBLIC_DEMO_MODE) {
       const savedRole = localStorage.getItem('inkloom_demo_role') || 'manager';
@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }) => {
   });
 
   const [loading, setLoading] = useState(() => !PUBLIC_DEMO_MODE);
+  const [tourOpen, setTourOpen] = useState(false);
 
   useEffect(() => {
     if (PUBLIC_DEMO_MODE) {
@@ -96,6 +97,50 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateOnboarding = async ({ completed, skipped, version = 1 }) => {
+    const payload = { completed, skipped, version };
+
+    // Persist locally for immediate offline/demo resilience
+    localStorage.setItem('inkloom_onboarding_status', JSON.stringify(payload));
+
+    if (PUBLIC_DEMO_MODE) {
+      const currentRole = user?.role || 'manager';
+      if (DEMO_USERS[currentRole]) {
+        DEMO_USERS[currentRole].onboarding = {
+          completed: completed !== undefined ? completed : DEMO_USERS[currentRole].onboarding?.completed || false,
+          skipped: skipped !== undefined ? skipped : DEMO_USERS[currentRole].onboarding?.skipped || false,
+          version: version || 1
+        };
+      }
+      setUser((prev) => ({
+        ...prev,
+        onboarding: {
+          completed: completed !== undefined ? completed : prev?.onboarding?.completed || false,
+          skipped: skipped !== undefined ? skipped : prev?.onboarding?.skipped || false,
+          version: version || 1
+        }
+      }));
+      return payload;
+    }
+
+    try {
+      const res = await api.patch('/auth/onboarding', payload);
+      if (res.data?.user || res.data?.onboarding) {
+        setUser((prev) => ({
+          ...prev,
+          onboarding: res.data.onboarding || res.data.user.onboarding
+        }));
+      }
+      return res.data;
+    } catch (err) {
+      console.warn('[Onboarding Update Warning]', err.message);
+      return payload;
+    }
+  };
+
+  const startTour = () => setTourOpen(true);
+  const closeTour = () => setTourOpen(false);
+
   return (
     <AuthContext.Provider
       value={{
@@ -107,7 +152,11 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
-        switchDemoRole
+        switchDemoRole,
+        tourOpen,
+        startTour,
+        closeTour,
+        updateOnboarding
       }}
     >
       {children}

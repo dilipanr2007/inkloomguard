@@ -10,11 +10,12 @@ import {
   History,
   ShieldAlert,
   Sparkles,
-  Layers
+  Layers,
+  Compass
 } from 'lucide-react';
 
 export default function Sidebar() {
-  const { user } = useAuth();
+  const { user, startTour } = useAuth();
   if (!user) return null;
 
   const role = user.role;
@@ -24,24 +25,28 @@ export default function Sidebar() {
       label: 'Dashboard',
       path: '/dashboard',
       icon: LayoutDashboard,
+      tourId: 'nav-dashboard',
       roles: ['creator', 'reviewer', 'manager']
     },
     {
       label: role === 'reviewer' ? 'Review Queue' : 'Content Submissions',
       path: '/content',
       icon: FileText,
+      tourId: 'nav-submissions',
       roles: ['creator', 'reviewer', 'manager']
     },
     {
       label: 'Submit Content',
       path: '/content/new',
       icon: PlusCircle,
+      tourId: 'nav-submit',
       roles: ['creator', 'manager']
     },
     {
       label: 'Brand Knowledge',
       path: '/guidelines',
       icon: BookOpen,
+      tourId: 'nav-knowledge',
       roles: ['creator', 'reviewer', 'manager'],
       badge: role === 'manager' ? 'Editor' : 'Library'
     },
@@ -49,12 +54,14 @@ export default function Sidebar() {
       label: 'Governance Analytics',
       path: '/analytics',
       icon: BarChart3,
+      tourId: 'nav-analytics',
       roles: ['reviewer', 'manager']
     },
     {
       label: 'Audit Trail',
       path: '/audit',
       icon: History,
+      tourId: 'nav-audit',
       roles: ['manager']
     }
   ];
@@ -62,7 +69,7 @@ export default function Sidebar() {
   return (
     <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 min-h-[calc(100vh-4rem)] border-r border-slate-800">
       {/* Workspace Context */}
-      <div className="p-4 border-b border-slate-800">
+      <div data-tour="brand-workspace" className="p-4 border-b border-slate-800">
         <div className="flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
           <Layers className="w-3.5 h-3.5 text-brand-400" />
           <span>Brand Workspace</span>
@@ -81,6 +88,7 @@ export default function Sidebar() {
               <NavLink
                 key={item.path}
                 to={item.path}
+                data-tour={item.tourId}
                 className={({ isActive }) =>
                   `flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
                     isActive
@@ -102,6 +110,19 @@ export default function Sidebar() {
             );
           })}
       </nav>
+
+      {/* Interactive Quick Tour Launcher */}
+      <div className="px-3 pb-2">
+        <button
+          type="button"
+          onClick={startTour}
+          className="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors"
+          title="Launch Guided Onboarding Tour"
+        >
+          <Compass className="w-3.5 h-3.5 text-brand-400" />
+          <span>Interactive Tour</span>
+        </button>
+      </div>
 
       {/* Governance Philosophy Footer */}
       <div className="p-3.5 m-3 rounded-lg bg-slate-800/70 border border-slate-700/60 text-slate-400 text-[11px] space-y-1.5">

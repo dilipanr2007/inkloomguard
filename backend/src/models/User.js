@@ -33,6 +33,23 @@ const userSchema = new mongoose.Schema(
     department: {
       type: String,
       default: 'Brand Marketing'
+    },
+    onboarding: {
+      completed: {
+        type: Boolean,
+        default: false
+      },
+      skipped: {
+        type: Boolean,
+        default: false
+      },
+      version: {
+        type: Number,
+        default: 1
+      },
+      lastCompletedAt: {
+        type: Date
+      }
     }
   },
   {

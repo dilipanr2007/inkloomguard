@@ -2,12 +2,13 @@ import React from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
+import GuidedTour from '../components/GuidedTour';
 import { useAuth } from '../context/AuthContext';
 import { PUBLIC_DEMO_MODE } from '../services/api';
-import { ShieldAlert, Sparkles, Lock, Eye } from 'lucide-react';
+import { ShieldAlert, Sparkles, Lock, Eye, Compass } from 'lucide-react';
 
 export default function AppLayout({ requireAuth = true }) {
-  const { user, isAuthenticated, loading, switchDemoRole } = useAuth();
+  const { user, isAuthenticated, loading, switchDemoRole, startTour } = useAuth();
 
   if (loading) {
     return (
@@ -26,6 +27,9 @@ export default function AppLayout({ requireAuth = true }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
+      {/* Interactive Guided Tour Overlay */}
+      {isAuthenticated && <GuidedTour />}
+
       {/* Requirement 8: Visible Public Demo Mode Banner */}
       {PUBLIC_DEMO_MODE && (
         <aside aria-label="Demo Mode Indicator" className="bg-slate-900 border-b border-amber-500/50 text-amber-200 px-4 py-2 text-xs flex flex-col sm:flex-row items-center justify-between gap-2 shadow-xs">
@@ -39,13 +43,23 @@ export default function AppLayout({ requireAuth = true }) {
               <span>Public Demo Mode</span>
             </span>
             <span className="text-slate-300 hidden md:inline">
-              CodeNexus India 2026 Evaluation • Read-Only Brand Governance Baseline
+              CodeNexus India 2026 Evaluation • Source-Grounded Brand Governance Baseline
             </span>
           </div>
 
           <div className="flex items-center space-x-2">
+            <button
+              type="button"
+              onClick={startTour}
+              className="px-2 py-0.5 rounded bg-brand-600/90 hover:bg-brand-600 text-white text-[11px] font-semibold transition-all inline-flex items-center space-x-1 border border-brand-500 shadow-2xs"
+              title="Launch Guided Tour"
+            >
+              <Compass className="w-3 h-3" />
+              <span>Replay Tour</span>
+            </button>
+
             <span className="text-slate-400 hidden lg:inline text-[11px]">Judge Perspective:</span>
-            <div className="flex items-center bg-slate-800 p-0.5 rounded-lg border border-slate-700">
+            <div data-tour="role-switcher" className="flex items-center bg-slate-800 p-0.5 rounded-lg border border-slate-700">
               <button
                 type="button"
                 onClick={() => switchDemoRole('creator')}

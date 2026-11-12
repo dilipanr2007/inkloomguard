@@ -12,11 +12,12 @@ import {
   ShieldAlert,
   Sparkles,
   BarChart2,
-  BookOpen
+  BookOpen,
+  Compass
 } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, startTour } = useAuth();
   const [stats, setStats] = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +27,7 @@ export default function DashboardPage() {
       try {
         const [overviewRes, contentRes] = await Promise.all([
           api.get('/analytics/overview'),
-          api.get('/content?limit=5')
+          api.get('/content?limit=6')
         ]);
         setStats(overviewRes.data.stats);
         setSubmissions(contentRes.data.contents || []);
@@ -79,15 +80,27 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {user?.role !== 'reviewer' && (
-          <Link
-            to="/content/new"
-            className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700 shadow-xs transition-colors self-start sm:self-auto"
+        <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={startTour}
+            className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-300 transition-colors shadow-2xs"
+            title="Replay Interactive Tour"
           >
-            <PlusCircle className="w-4 h-4" />
-            <span>Submit Content</span>
-          </Link>
-        )}
+            <Compass className="w-4 h-4 text-brand-600" />
+            <span>Interactive Tour</span>
+          </button>
+
+          {user?.role !== 'reviewer' && (
+            <Link
+              to="/content/new"
+              className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700 shadow-xs transition-colors"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Submit Content</span>
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* KPI Stats Grid */}

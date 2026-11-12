@@ -2,10 +2,20 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { PUBLIC_DEMO_MODE } from '../services/api';
-import { ShieldCheck, LogOut, UserCircle, Globe, ChevronDown, CheckCircle2, RotateCcw } from 'lucide-react';
+import {
+  ShieldCheck,
+  LogOut,
+  UserCircle,
+  Globe,
+  ChevronDown,
+  CheckCircle2,
+  RotateCcw,
+  Compass,
+  Sparkles
+} from 'lucide-react';
 
 export default function Navbar() {
-  const { user, logout, switchDemoRole } = useAuth();
+  const { user, logout, switchDemoRole, startTour } = useAuth();
   const navigate = useNavigate();
 
   const handleRoleSwitch = async (role) => {
@@ -58,9 +68,23 @@ export default function Navbar() {
 
       {/* Right Controls */}
       <div className="flex items-center space-x-3">
+        {/* Replay Guided Tour Button */}
+        {user && (
+          <button
+            type="button"
+            onClick={startTour}
+            data-tour="tour-replay"
+            className="hidden sm:inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 border border-brand-200 text-xs font-semibold transition-all shadow-2xs"
+            title="Launch Interactive Tour (Guided Onboarding)"
+          >
+            <Compass className="w-3.5 h-3.5 text-brand-600" />
+            <span>Tour</span>
+          </button>
+        )}
+
         {/* Hackathon Demo Account Quick Switcher */}
         {user && (
-          <div className="flex items-center bg-slate-50 p-1 rounded-lg border border-slate-200">
+          <div data-tour="role-switcher" className="flex items-center bg-slate-50 p-1 rounded-lg border border-slate-200">
             <span className="text-[11px] font-semibold text-slate-500 uppercase px-2 hidden sm:inline">Role:</span>
             <button
               onClick={() => handleRoleSwitch('creator')}

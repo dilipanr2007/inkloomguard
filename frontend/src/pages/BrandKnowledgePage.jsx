@@ -13,13 +13,20 @@ import {
   Edit,
   Trash2,
   ShieldCheck,
-  RefreshCw
+  RefreshCw,
+  Scale,
+  ExternalLink,
+  Package,
+  Layers,
+  Sparkles
 } from 'lucide-react';
 
 export default function BrandKnowledgePage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('guidelines'); // 'guidelines' | 'terminology' | 'facts' | 'assets'
+  const [activeTab, setActiveTab] = useState('guidelines'); // 'guidelines' | 'regulatory' | 'products' | 'terminology' | 'assets'
   const [guidelines, setGuidelines] = useState([]);
+  const [regulatory, setRegulatory] = useState([]);
+  const [products, setProducts] = useState([]);
   const [terminology, setTerminology] = useState([]);
   const [facts, setFacts] = useState([]);
   const [assets, setAssets] = useState([]);
@@ -61,13 +68,20 @@ export default function BrandKnowledgePage() {
     try {
       if (activeTab === 'guidelines') {
         const res = await api.get('/guidelines');
-        setGuidelines(res.data.guidelines || []);
+        setGuidelines(res.data.internalGuidelines || res.data.guidelines || []);
+      } else if (activeTab === 'regulatory') {
+        const res = await api.get('/regulatory');
+        setRegulatory(res.data.regulatory || []);
+      } else if (activeTab === 'products') {
+        const [prodRes, factRes] = await Promise.all([
+          api.get('/products'),
+          api.get('/facts')
+        ]);
+        setProducts(prodRes.data.products || []);
+        setFacts(factRes.data.facts || []);
       } else if (activeTab === 'terminology') {
         const res = await api.get('/terminology');
         setTerminology(res.data.terminology || []);
-      } else if (activeTab === 'facts') {
-        const res = await api.get('/facts');
-        setFacts(res.data.facts || []);
       } else if (activeTab === 'assets') {
         const res = await api.get('/assets');
         setAssets(res.data.assets || []);
@@ -151,10 +165,10 @@ export default function BrandKnowledgePage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center space-x-2">
             <BookOpen className="w-6 h-6 text-brand-600" />
-            <span>Brand Knowledge Library</span>
+            <span>Brand Knowledge & Regulatory Library</span>
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Ground-truth rules, preferred terms, and verified facts used by the AI retrieval engine.
+            Ground-truth rules, official statutory regulations (FSSAI, ASCI, CCPA), and approved product facts.
           </p>
         </div>
 
@@ -173,12 +187,13 @@ export default function BrandKnowledgePage() {
 
       {/* Tabs & Search */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
-        <div className="flex items-center space-x-1 overflow-x-auto">
+        <div className="flex items-center space-x-1 overflow-x-auto pb-1 sm:pb-0">
           {[
             { id: 'guidelines', label: 'Brand Guidelines', icon: ShieldCheck },
-            { id: 'terminology', label: 'Preferred & Prohibited Terminology', icon: Tag },
-            { id: 'facts', label: 'Approved Verified Facts', icon: FileCheck },
-            { id: 'assets', label: 'Brand Assets & Palette', icon: Palette }
+            { id: 'regulatory', label: 'Regulatory Standards (FSSAI/ASCI/CCPA)', icon: Scale },
+            { id: 'products', label: 'Products & Facts', icon: Package },
+            { id: 'terminology', label: 'Terminology Rules', icon: Tag },
+            { id: 'assets', label: 'Assets & Palette', icon: Palette }
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -210,7 +225,7 @@ export default function BrandKnowledgePage() {
         </div>
       </div>
 
-      {/* Tab 1: Guidelines List */}
+      {/* Tab 1: Internal Brand Guidelines */}
       {activeTab === 'guidelines' && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
           {loading ? (
@@ -235,7 +250,7 @@ export default function BrandKnowledgePage() {
                       </div>
                       <div className="flex items-center space-x-2">
                         <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
-                          g.severity === 'high' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                          g.severity === 'high' ? 'bg-rose-100 text-rose-800' : g.severity === 'medium' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
                         }`}>
                           {g.severity} severity
                         </span>
@@ -254,7 +269,7 @@ export default function BrandKnowledgePage() {
                     <div className="flex items-center space-x-4 text-[11px] text-slate-400 pt-1">
                       <span>Status: <strong className="text-emerald-600 uppercase font-semibold">{g.status}</strong></span>
                       <span>Version: v{g.version}</span>
-                      <span>Updated: {new Date(g.updatedAt).toLocaleDateString()}</span>
+                      <span>Scope: Internal Brand Policy</span>
                     </div>
                   </div>
                 ))}
@@ -263,7 +278,164 @@ export default function BrandKnowledgePage() {
         </div>
       )}
 
-      {/* Tab 2: Terminology List */}
+      {/* Tab 2: Regulatory Standards (FSSAI / ASCI / CCPA) */}
+      {activeTab === 'regulatory' && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+          {loading ? (
+            <div className="p-12 flex justify-center">
+              <div className="w-7 h-7 border-3 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              <div className="p-4 bg-amber-50/60 border-b border-amber-200/70 text-xs text-amber-900 flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Scale className="w-4 h-4 text-amber-700" />
+                  <span>
+                    <strong>Statutory Regulatory Knowledge:</strong> Traceable clauses from FSSAI, ASCI, and CCPA governing fruit juice advertising, health claims, and influencer promotions in India.
+                  </span>
+                </div>
+                <span className="text-[11px] text-amber-800 font-semibold uppercase">Official Sources</span>
+              </div>
+
+              {regulatory
+                .filter(r => r.title.toLowerCase().includes(searchTerm.toLowerCase()) || r.description.toLowerCase().includes(searchTerm.toLowerCase()) || r.guidelineId.toLowerCase().includes(searchTerm.toLowerCase()))
+                .map((r) => (
+                  <div key={r._id} className="p-5 hover:bg-slate-50/70 transition-colors space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                          {r.guidelineId}
+                        </span>
+                        <h3 className="font-bold text-slate-900 text-sm">{r.title}</h3>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase bg-slate-900 text-white">
+                          {r.regulatoryBody}
+                        </span>
+                      </div>
+                      <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
+                        r.severity === 'high' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {r.severity} severity
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-700 leading-relaxed font-sans">{r.description}</p>
+
+                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5 text-xs">
+                      <p className="text-slate-600 font-medium">
+                        <strong>Verified Legal Clause:</strong> {r.sourceClause}
+                      </p>
+                      {r.supportedRequirement && (
+                        <p className="text-slate-600">
+                          <strong>Supported Requirement:</strong> {r.supportedRequirement}
+                        </p>
+                      )}
+                      {r.applicability && (
+                        <p className="text-slate-500 text-[11px]">
+                          <strong>Applicability:</strong> {r.applicability}
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between pt-1 text-[11px] border-t border-slate-200/60">
+                        <span className="text-slate-400">Effective: {r.version} {r.verificationDate ? `• Verified ${r.verificationDate}` : ''}</span>
+                        <a
+                          href={r.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-brand-600 hover:text-brand-700 font-semibold inline-flex items-center space-x-1"
+                        >
+                          <span>Official Gazette / Law Source</span>
+                          <ExternalLink className="w-3 h-3 ml-0.5" />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab 3: Products Catalogue & Approved Facts */}
+      {activeTab === 'products' && (
+        <div className="space-y-6">
+          {/* Fictional Product Catalogue Section */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
+              <div className="flex items-center space-x-2">
+                <Package className="w-4 h-4 text-brand-600" />
+                <h3 className="text-sm font-bold text-slate-900">FreshPlus Product Catalogue</h3>
+              </div>
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                Fictional FMCG Lineup for Demo
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+              {products.map((p) => (
+                <div key={p._id} className="p-5 space-y-2 hover:bg-slate-50/50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+                      {p.productId}
+                    </span>
+                    <span className="text-[11px] font-semibold text-slate-500">{p.category}</span>
+                  </div>
+                  <h4 className="font-bold text-slate-900 text-sm">{p.name}</h4>
+                  <p className="text-xs text-slate-600"><strong>Ingredients:</strong> {p.ingredients}</p>
+                  <p className="text-xs text-slate-600"><strong>Nutritional Breakdown:</strong> {p.nutritionPer100ml}</p>
+                  <p className="text-xs text-slate-500"><strong>Packaging Spec:</strong> {p.packaging}</p>
+                  <p className="text-[10px] text-amber-700 italic pt-1">
+                    * {p.fictionalDisclaimer}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Approved Facts Section */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
+              <div className="flex items-center space-x-2">
+                <FileCheck className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-sm font-bold text-slate-900">Approved Nutritional & Ingredient Facts</h3>
+              </div>
+              <span className="text-xs text-slate-500 font-medium">Grounded Knowledge Retrieval Source</span>
+            </div>
+
+            <div className="divide-y divide-slate-100">
+              {facts
+                .filter(f => f.statement.toLowerCase().includes(searchTerm.toLowerCase()) || f.factId.toLowerCase().includes(searchTerm.toLowerCase()))
+                .map((f) => (
+                  <div key={f._id} className="p-5 hover:bg-slate-50/70 transition-colors space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          {f.factId}
+                        </span>
+                        <span className="text-xs font-bold text-slate-700 uppercase">{f.category}</span>
+                      </div>
+                      {isManager && (
+                        <button
+                          onClick={() => handleDeleteItem('facts', f._id)}
+                          className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-xs font-medium text-slate-900 leading-relaxed font-sans">"{f.statement}"</p>
+                    <div className="flex flex-col space-y-0.5 text-[11px] text-slate-500">
+                      <span><strong>Document Reference:</strong> {f.sourceDoc}</span>
+                      {f.disclaimer && (
+                        <span className="text-amber-700 italic">{f.disclaimer}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 4: Terminology List */}
       {activeTab === 'terminology' && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
           {loading ? (
@@ -312,47 +484,7 @@ export default function BrandKnowledgePage() {
         </div>
       )}
 
-      {/* Tab 3: Approved Facts */}
-      {activeTab === 'facts' && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
-          {loading ? (
-            <div className="p-12 flex justify-center">
-              <div className="w-7 h-7 border-3 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-100">
-              {facts
-                .filter(f => f.statement.toLowerCase().includes(searchTerm.toLowerCase()) || f.factId.toLowerCase().includes(searchTerm.toLowerCase()))
-                .map((f) => (
-                  <div key={f._id} className="p-5 hover:bg-slate-50/70 transition-colors space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          {f.factId}
-                        </span>
-                        <span className="text-xs font-bold text-slate-700 uppercase">{f.category}</span>
-                      </div>
-                      {isManager && (
-                        <button
-                          onClick={() => handleDeleteItem('facts', f._id)}
-                          className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                    <p className="text-xs font-medium text-slate-900 leading-relaxed font-sans">"{f.statement}"</p>
-                    <p className="text-[11px] text-slate-500">
-                      <strong>Source Verification:</strong> {f.sourceDoc}
-                    </p>
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Tab 4: Assets & Palette */}
+      {/* Tab 5: Assets & Palette */}
       {activeTab === 'assets' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {assets.map((asset) => (
@@ -385,7 +517,7 @@ export default function BrandKnowledgePage() {
                   <input
                     type="text"
                     required
-                    placeholder="GUIDE-006"
+                    placeholder="GUIDE-010"
                     value={newGuideline.guidelineId}
                     onChange={(e) => setNewGuideline({ ...newGuideline, guidelineId: e.target.value })}
                     className="w-full mt-1 p-2 bg-slate-50 border border-slate-300 rounded-lg uppercase"
@@ -427,7 +559,7 @@ export default function BrandKnowledgePage() {
                   <input
                     type="text"
                     required
-                    placeholder="TERM-003"
+                    placeholder="TERM-005"
                     value={newTerm.terminologyId}
                     onChange={(e) => setNewTerm({ ...newTerm, terminologyId: e.target.value })}
                     className="w-full mt-1 p-2 bg-slate-50 border border-slate-300 rounded-lg uppercase"
@@ -480,7 +612,7 @@ export default function BrandKnowledgePage() {
                   <input
                     type="text"
                     required
-                    placeholder="FACT-004"
+                    placeholder="FACT-007"
                     value={newFact.factId}
                     onChange={(e) => setNewFact({ ...newFact, factId: e.target.value })}
                     className="w-full mt-1 p-2 bg-slate-50 border border-slate-300 rounded-lg uppercase"

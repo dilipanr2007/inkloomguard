@@ -28,7 +28,12 @@ const registerUser = async (req, res, next) => {
       password,
       role: assignedRole,
       organization: organization || 'FreshPlus Global',
-      department: department || 'Brand Marketing'
+      department: department || 'Brand Marketing',
+      onboarding: {
+        completed: false,
+        skipped: false,
+        version: 1
+      }
     });
 
     const token = generateToken(user._id);
@@ -54,7 +59,8 @@ const registerUser = async (req, res, next) => {
         email: user.email,
         role: user.role,
         organization: user.organization,
-        department: user.department
+        department: user.department,
+        onboarding: user.onboarding
       }
     });
   } catch (error) {
@@ -106,7 +112,8 @@ const loginUser = async (req, res, next) => {
         email: user.email,
         role: user.role,
         organization: user.organization,
-        department: user.department
+        department: user.department,
+        onboarding: user.onboarding || { completed: false, skipped: false, version: 1 }
       }
     });
   } catch (error) {
@@ -120,6 +127,9 @@ const loginUser = async (req, res, next) => {
 const getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
     res.json({
       success: true,
       user: {
@@ -128,8 +138,39 @@ const getMe = async (req, res, next) => {
         email: user.email,
         role: user.role,
         organization: user.organization,
-        department: user.department
+        department: user.department,
+        onboarding: user.onboarding || { completed: false, skipped: false, version: 1 }
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update user onboarding progress & tour version
+// @route   PATCH /api/auth/onboarding
+// @access  Private
+const updateOnboarding = async (req, res, next) => {
+  try {
+    const { completed, skipped, version } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    user.onboarding = {
+      completed: completed !== undefined ? Boolean(completed) : user.onboarding?.completed || false,
+      skipped: skipped !== undefined ? Boolean(skipped) : user.onboarding?.skipped || false,
+      version: version || user.onboarding?.version || 1,
+      lastCompletedAt: completed ? new Date() : user.onboarding?.lastCompletedAt
+    };
+
+    await user.save();
+
+    res.json({
+      success: true,
+      onboarding: user.onboarding,
+      message: 'Onboarding preferences updated successfully'
     });
   } catch (error) {
     next(error);
@@ -187,6 +228,7 @@ module.exports = {
   registerUser,
   loginUser,
   getMe,
+  updateOnboarding,
   getUsers,
   updateUserRole
 };
