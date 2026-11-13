@@ -94,6 +94,7 @@ export default function DashboardPage() {
           {user?.role !== 'reviewer' && (
             <Link
               to="/content/new"
+              data-tour="action-submit"
               className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700 shadow-xs transition-colors"
             >
               <PlusCircle className="w-4 h-4" />
@@ -104,7 +105,7 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div data-tour="kpi-grid" className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-1">
           <p className="text-xs font-medium text-slate-500">Total Submissions</p>
           <p className="text-2xl font-bold text-slate-900">{stats?.totalSubmissions || 0}</p>
@@ -157,7 +158,7 @@ export default function DashboardPage() {
       )}
 
       {/* Recent Submissions Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+      <div data-tour="submissions-table" className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <FileText className="w-4 h-4 text-slate-500" />

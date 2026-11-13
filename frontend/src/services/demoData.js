@@ -1,4 +1,4 @@
-// Public Demo Mode Data for CodeNexus India 2026 Judging
+// Public Demo Mode Data
 // Source-Grounded Brand Governance Engine for FreshPlus Global
 
 export const DEMO_USERS = {
@@ -77,7 +77,7 @@ export const DEMO_PRODUCTS = [
     productId: 'PROD-001',
     name: 'FreshPlus Valencia Orange',
     category: '100% Pure Pasteurized Fruit Juice',
-    fictionalDisclaimer: 'Fictional demo FMCG product for CodeNexus India 2026',
+    fictionalDisclaimer: 'Fictional demo FMCG product specification',
     ingredients: '100% Valencia orange juice, filtered water. 0g added refined cane sugar.',
     nutritionPer100ml: 'Energy: 44 kcal, Carbohydrates: 10.2g (natural fruit sugars), Protein: 0.7g, Fat: 0.1g, Vitamin C: 24mg (60% Indian RDA).',
     packaging: '200ml and 1L bottles made of 100% recycled food-grade rPET.',
@@ -88,7 +88,7 @@ export const DEMO_PRODUCTS = [
     productId: 'PROD-002',
     name: 'FreshPlus Alphonso Mango Nectar',
     category: 'Fruit Beverage & Nectar',
-    fictionalDisclaimer: 'Fictional demo FMCG product for CodeNexus India 2026',
+    fictionalDisclaimer: 'Fictional demo FMCG product specification',
     ingredients: 'Alphonso mango pulp (40%), water, natural lemon juice. No synthetic yellow colorants.',
     nutritionPer100ml: 'Energy: 52 kcal, Carbohydrates: 12.8g (natural fruit sugars), Vitamin A: 180mcg.',
     packaging: '250ml glass bottles & 100% recyclable rPET containers.',
@@ -99,7 +99,7 @@ export const DEMO_PRODUCTS = [
     productId: 'PROD-003',
     name: 'FreshPlus Crisp Himalayan Apple',
     category: '100% Pure Cold-Pressed Juice',
-    fictionalDisclaimer: 'Fictional demo FMCG product for CodeNexus India 2026',
+    fictionalDisclaimer: 'Fictional demo FMCG product specification',
     ingredients: '100% Himalayan apple juice, natural ascorbic acid (antioxidant). No added sugar.',
     nutritionPer100ml: 'Energy: 48 kcal, Carbohydrates: 11.5g, Natural Pectin: 0.8g.',
     packaging: '300ml glass bottle and 100% rPET single-serve.',
@@ -110,7 +110,7 @@ export const DEMO_PRODUCTS = [
     productId: 'PROD-004',
     name: 'FreshPlus Guava Glow',
     category: 'Tropical Fruit Beverage',
-    fictionalDisclaimer: 'Fictional demo FMCG product for CodeNexus India 2026',
+    fictionalDisclaimer: 'Fictional demo FMCG product specification',
     ingredients: 'Pink guava pulp (35%), natural fruit extracts. No high-fructose corn syrup.',
     nutritionPer100ml: 'Energy: 46 kcal, Dietary Fiber: 1.4g, Vitamin C: 45mg (100%+ daily RDA).',
     packaging: '200ml recyclable tetra pack & rPET bottle.',
@@ -418,7 +418,7 @@ export const DEMO_FACTS = [
     category: 'Ingredients',
     sourceDoc: 'Internal Lab Formulation Spec #FP-SPEC-2025-01 (Fictional Demo Spec)',
     isFictionalDemoFact: true,
-    disclaimer: 'Fictional demo specification created for CodeNexus India 2026. Not an actual government or independent laboratory certification.',
+    disclaimer: 'Fictional demo specification created for product demonstration. Not an actual government or independent laboratory certification.',
     status: 'active',
     version: '1.0'
   },
@@ -429,7 +429,7 @@ export const DEMO_FACTS = [
     category: 'Nutrition',
     sourceDoc: 'Internal Nutritional Quality Profile #FP-NUTR-2025-02 (Fictional Demo Spec)',
     isFictionalDemoFact: true,
-    disclaimer: 'Fictional demo specification created for CodeNexus India 2026. Not an actual government or independent laboratory certification.',
+    disclaimer: 'Fictional demo specification created for product demonstration. Not an actual government or independent laboratory certification.',
     status: 'active',
     version: '1.0'
   },
@@ -440,7 +440,7 @@ export const DEMO_FACTS = [
     category: 'Packaging',
     sourceDoc: 'Packaging Sustainability Specification #FP-PKG-2025-03 (Fictional Demo Spec)',
     isFictionalDemoFact: true,
-    disclaimer: 'Fictional demo specification created for CodeNexus India 2026. Not an actual government or independent laboratory certification.',
+    disclaimer: 'Fictional demo specification created for product demonstration. Not an actual government or independent laboratory certification.',
     status: 'active',
     version: '1.0'
   },
@@ -451,7 +451,7 @@ export const DEMO_FACTS = [
     category: 'Ingredients',
     sourceDoc: 'Internal Orchard Batch Specification #FP-APL-2025-04 (Fictional Demo Spec)',
     isFictionalDemoFact: true,
-    disclaimer: 'Fictional demo specification created for CodeNexus India 2026. Not an actual government or independent laboratory certification.',
+    disclaimer: 'Fictional demo specification created for product demonstration. Not an actual government or independent laboratory certification.',
     status: 'active',
     version: '1.0'
   },
@@ -462,7 +462,7 @@ export const DEMO_FACTS = [
     category: 'Operations',
     sourceDoc: 'Thermal Processing SOP #FP-SOP-2025-05 (Fictional Demo Spec)',
     isFictionalDemoFact: true,
-    disclaimer: 'Fictional demo specification created for CodeNexus India 2026. Not an actual government or independent laboratory certification.',
+    disclaimer: 'Fictional demo specification created for product demonstration. Not an actual government or independent laboratory certification.',
     status: 'active',
     version: '1.0'
   },
@@ -473,7 +473,7 @@ export const DEMO_FACTS = [
     category: 'Ingredients',
     sourceDoc: 'Mango Pulp Standard Formulation #FP-MNG-2025-06 (Fictional Demo Spec)',
     isFictionalDemoFact: true,
-    disclaimer: 'Fictional demo specification created for CodeNexus India 2026. Not an actual government or independent laboratory certification.',
+    disclaimer: 'Fictional demo specification created for product demonstration. Not an actual government or independent laboratory certification.',
     status: 'active',
     version: '1.0'
   }
@@ -1502,7 +1502,7 @@ export const DEMO_AUDIT_LOGS = [
 export const recordDemoAuditLog = ({ action, user, targetId, details }) => {
   const newLog = {
     _id: `log-demo-${Date.now()}`,
-    userEmail: user?.email || 'judge@freshplus.io',
+    userEmail: user?.email || 'reviewer@freshplus.io',
     role: user?.role || 'reviewer',
     action,
     targetResource: 'Content',

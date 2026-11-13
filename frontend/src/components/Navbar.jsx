@@ -9,7 +9,6 @@ import {
   Globe,
   ChevronDown,
   CheckCircle2,
-  RotateCcw,
   Compass,
   Sparkles
 } from 'lucide-react';
@@ -25,6 +24,11 @@ export default function Navbar() {
     } catch (err) {
       console.error('Role switch failed', err);
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   const getRoleBadgeColor = (role) => {
@@ -82,7 +86,7 @@ export default function Navbar() {
           </button>
         )}
 
-        {/* Hackathon Demo Account Quick Switcher */}
+        {/* Role Perspective Quick Switcher */}
         {user && (
           <div data-tour="role-switcher" className="flex items-center bg-slate-50 p-1 rounded-lg border border-slate-200">
             <span className="text-[11px] font-semibold text-slate-500 uppercase px-2 hidden sm:inline">Role:</span>
@@ -122,7 +126,7 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* User Profile */}
+        {/* User Profile & Logout */}
         {user ? (
           <div className="flex items-center space-x-3 pl-2 border-l border-slate-200">
             <div className="text-right hidden sm:block">
@@ -136,18 +140,13 @@ export default function Navbar() {
             </div>
 
             <button
-              onClick={() => {
-                logout();
-                if (PUBLIC_DEMO_MODE) {
-                  navigate('/dashboard');
-                } else {
-                  navigate('/login');
-                }
-              }}
-              className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-              title={PUBLIC_DEMO_MODE ? "Reset Demo Session" : "Log Out"}
+              onClick={handleLogout}
+              className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-slate-200 hover:border-rose-200"
+              title="Log Out"
+              aria-label="Log Out"
             >
-              {PUBLIC_DEMO_MODE ? <RotateCcw className="w-4 h-4 text-slate-400 hover:text-slate-700" /> : <LogOut className="w-4 h-4" />}
+              <LogOut className="w-4 h-4 text-rose-500" />
+              <span className="hidden sm:inline">Log Out</span>
             </button>
           </div>
         ) : (

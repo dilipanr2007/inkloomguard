@@ -5,9 +5,11 @@ import { DEMO_USERS } from '../services/demoData';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  // If Public Demo Mode is active, initialize immediately with demo profile
+  // If Public Demo Mode is active, initialize with demo profile unless explicitly logged out
   const [user, setUser] = useState(() => {
     if (PUBLIC_DEMO_MODE) {
+      const isLoggedOut = localStorage.getItem('inkloom_demo_logged_out') === 'true';
+      if (isLoggedOut) return null;
       const savedRole = localStorage.getItem('inkloom_demo_role') || 'manager';
       return DEMO_USERS[savedRole] || DEMO_USERS.manager;
     }
@@ -16,7 +18,11 @@ export const AuthProvider = ({ children }) => {
   });
 
   const [token, setToken] = useState(() => {
-    if (PUBLIC_DEMO_MODE) return 'public-demo-token';
+    if (PUBLIC_DEMO_MODE) {
+      const isLoggedOut = localStorage.getItem('inkloom_demo_logged_out') === 'true';
+      if (isLoggedOut) return null;
+      return 'public-demo-token';
+    }
     return localStorage.getItem('inkloom_token') || null;
   });
 
@@ -47,6 +53,23 @@ export const AuthProvider = ({ children }) => {
   }, [token]);
 
   const login = async (email, password) => {
+    if (PUBLIC_DEMO_MODE) {
+      let matchedRole = 'manager';
+      const em = (email || '').toLowerCase();
+      if (em.includes('creator')) matchedRole = 'creator';
+      else if (em.includes('reviewer')) matchedRole = 'reviewer';
+      else if (em.includes('manager')) matchedRole = 'manager';
+
+      const userData = DEMO_USERS[matchedRole] || DEMO_USERS.manager;
+      localStorage.removeItem('inkloom_demo_logged_out');
+      localStorage.setItem('inkloom_demo_role', matchedRole);
+      localStorage.setItem('inkloom_token', 'public-demo-token');
+      localStorage.setItem('inkloom_user', JSON.stringify(userData));
+      setToken('public-demo-token');
+      setUser(userData);
+      return userData;
+    }
+
     const res = await api.post('/auth/login', { email, password });
     const { token: jwtToken, user: userData } = res.data;
     localStorage.setItem('inkloom_token', jwtToken);
@@ -68,8 +91,12 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     if (PUBLIC_DEMO_MODE) {
-      localStorage.setItem('inkloom_demo_role', 'manager');
-      setUser(DEMO_USERS.manager);
+      localStorage.setItem('inkloom_demo_logged_out', 'true');
+      localStorage.removeItem('inkloom_token');
+      localStorage.removeItem('inkloom_user');
+      localStorage.removeItem('inkloom_onboarding_status');
+      setToken(null);
+      setUser(null);
       return;
     }
     localStorage.removeItem('inkloom_token');
@@ -81,7 +108,11 @@ export const AuthProvider = ({ children }) => {
   const switchDemoRole = async (targetRole) => {
     if (PUBLIC_DEMO_MODE) {
       const selected = DEMO_USERS[targetRole] || DEMO_USERS.manager;
+      localStorage.removeItem('inkloom_demo_logged_out');
       localStorage.setItem('inkloom_demo_role', targetRole);
+      localStorage.setItem('inkloom_token', 'public-demo-token');
+      localStorage.setItem('inkloom_user', JSON.stringify(selected));
+      setToken('public-demo-token');
       setUser(selected);
       return selected;
     }
@@ -147,7 +178,7 @@ export const AuthProvider = ({ children }) => {
         user,
         token,
         loading,
-        isAuthenticated: PUBLIC_DEMO_MODE ? true : (!!user && !!token),
+        isAuthenticated: Boolean(user && token),
         isDemoMode: PUBLIC_DEMO_MODE,
         login,
         register,

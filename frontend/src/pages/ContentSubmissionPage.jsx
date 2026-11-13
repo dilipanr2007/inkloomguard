@@ -73,7 +73,7 @@ export default function ContentSubmissionPage() {
           title="Fills the exact prompt demo scenario"
         >
           <Sparkles className="w-3.5 h-3.5 text-brand-600" />
-          <span>Load Hackathon Test Sample</span>
+          <span>Load Demo Sample</span>
         </button>
       </div>
 

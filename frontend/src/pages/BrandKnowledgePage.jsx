@@ -96,7 +96,7 @@ export default function BrandKnowledgePage() {
   const handleCreateGuideline = async (e) => {
     e.preventDefault();
     if (PUBLIC_DEMO_MODE) {
-      alert('Public Demo Mode (Read-Only): Adding guidelines is disabled to preserve the evaluation index for CodeNexus judges.');
+      alert('Demo Mode (Read-Only): Adding guidelines is disabled to preserve baseline demo data.');
       setShowAddModal(false);
       return;
     }
@@ -113,7 +113,7 @@ export default function BrandKnowledgePage() {
   const handleCreateTerminology = async (e) => {
     e.preventDefault();
     if (PUBLIC_DEMO_MODE) {
-      alert('Public Demo Mode (Read-Only): Adding terminology rules is disabled to preserve the evaluation index.');
+      alert('Demo Mode (Read-Only): Adding terminology rules is disabled to preserve baseline demo data.');
       setShowAddModal(false);
       return;
     }
@@ -130,7 +130,7 @@ export default function BrandKnowledgePage() {
   const handleCreateFact = async (e) => {
     e.preventDefault();
     if (PUBLIC_DEMO_MODE) {
-      alert('Public Demo Mode (Read-Only): Adding approved facts is disabled to preserve the evaluation index.');
+      alert('Demo Mode (Read-Only): Adding approved facts is disabled to preserve baseline demo data.');
       setShowAddModal(false);
       return;
     }
@@ -146,7 +146,7 @@ export default function BrandKnowledgePage() {
 
   const handleDeleteItem = async (endpoint, id) => {
     if (PUBLIC_DEMO_MODE) {
-      alert('Public Demo Mode (Read-Only): Record deletion is disabled during judge evaluation.');
+      alert('Demo Mode (Read-Only): Record deletion is disabled in demo mode.');
       return;
     }
     if (!window.confirm('Delete this approved knowledge record from the governance index?')) return;

@@ -270,7 +270,7 @@ export default function ContentReviewStudioPage() {
       });
       const reviewerComment = {
         _id: `comm-demo-${Date.now()}`,
-        author: { name: user?.name || 'Judge (Reviewer)', role: user?.role || 'reviewer' },
+        author: { name: user?.name || 'Arjun Mehta (Reviewer)', role: user?.role || 'reviewer' },
         comment: `[Changes Requested]: ${changesModal.reason}`,
         versionNumber: data?.content?.currentVersion || 1,
         createdAt: new Date().toISOString()
@@ -317,7 +317,7 @@ export default function ContentReviewStudioPage() {
       });
       const reviewerComment = {
         _id: `comm-demo-${Date.now()}`,
-        author: { name: user?.name || 'Judge (Reviewer)', role: user?.role || 'reviewer' },
+        author: { name: user?.name || 'Arjun Mehta (Reviewer)', role: user?.role || 'reviewer' },
         comment: `[Rejected]: ${rejectModal.reason}`,
         versionNumber: data?.content?.currentVersion || 1,
         createdAt: new Date().toISOString()
@@ -356,7 +356,7 @@ export default function ContentReviewStudioPage() {
       const demoComment = {
         _id: `comm-${Date.now()}`,
         user: {
-          name: user?.name || 'Judge (Demo Reviewer)',
+          name: user?.name || 'Arjun Mehta (Reviewer)',
           role: user?.role || 'reviewer'
         },
         text: newComment,

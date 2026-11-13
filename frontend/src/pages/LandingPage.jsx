@@ -20,7 +20,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-brand-500 selection:text-white">
       {/* Top Banner */}
       <div className="bg-slate-900 text-slate-300 text-xs py-2 px-4 text-center font-medium border-b border-slate-800">
-        <span>CodeNexus India 2026 Hackathon Entry • Source-Grounded Brand Governance • Domain: </span>
+        <span>Enterprise Brand Protection • Source-Grounded Brand Governance • Domain: </span>
         <a href="https://inkloomguard.xyz" className="text-brand-400 font-semibold underline hover:text-brand-300 ml-1">
           inkloomguard.xyz
         </a>
@@ -241,7 +241,7 @@ export default function LandingPage() {
             <span>• Inkloom AI Platform</span>
           </div>
 
-          <p>© 2026 Inkloom AI. CodeNexus India 2026 Hackathon Round 2 Implementation.</p>
+          <p>© 2026 Inkloom AI. Enterprise Brand Governance Platform. All rights reserved.</p>
 
           <div className="flex items-center space-x-4">
             <a href="https://inkloomguard.xyz" className="hover:text-white transition-colors">

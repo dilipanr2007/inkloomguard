@@ -16,7 +16,10 @@ class FindingValidator:
         'Unsupported Claim',
         'Contradicted Fact',
         'Promotional Claim',
-        'Style and Communication'
+        'Style and Communication',
+        'Regulatory Compliance',
+        'Influencer Marketing',
+        'Packaging & Labelling'
     }
 
     ALLOWED_SEVERITIES = {'high', 'medium', 'low', 'advisory'}

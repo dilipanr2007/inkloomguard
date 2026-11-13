@@ -43,7 +43,7 @@ export default function AppLayout({ requireAuth = true }) {
               <span>Public Demo Mode</span>
             </span>
             <span className="text-slate-300 hidden md:inline">
-              CodeNexus India 2026 Evaluation • Source-Grounded Brand Governance Baseline
+              Interactive Showcase Mode • Source-Grounded Brand Governance Baseline
             </span>
           </div>
 
@@ -58,7 +58,7 @@ export default function AppLayout({ requireAuth = true }) {
               <span>Replay Tour</span>
             </button>
 
-            <span className="text-slate-400 hidden lg:inline text-[11px]">Judge Perspective:</span>
+            <span className="text-slate-400 hidden lg:inline text-[11px]">Active Role:</span>
             <div data-tour="role-switcher" className="flex items-center bg-slate-800 p-0.5 rounded-lg border border-slate-700">
               <button
                 type="button"

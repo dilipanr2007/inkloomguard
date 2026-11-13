@@ -21,14 +21,14 @@ import {
   recordDemoAuditLog
 } from './demoData';
 
-// Public Demo Mode flag for CodeNexus India 2026 Hackathon judging
-// Set to true to bypass login screens, deliver instant grounded demo responses, and enforce read-only safety.
-// Easily toggleable back to false post-judging (or via VITE_PUBLIC_DEMO_MODE=false in environment).
+// Public Demo Mode flag
+// Set to true to deliver instant grounded demo responses and enforce read-only safety.
+// Easily toggleable via VITE_PUBLIC_DEMO_MODE=false in environment.
 export const PUBLIC_DEMO_MODE = import.meta.env.VITE_PUBLIC_DEMO_MODE !== 'false';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// Helper to provide source-grounded demo data for CodeNexus India 2026
+// Helper to provide source-grounded demo data
 const getDemoResponse = (config) => {
   const url = config.url || '';
   const method = (config.method || 'get').toLowerCase();
@@ -93,6 +93,10 @@ const getDemoResponse = (config) => {
       return { logs: DEMO_AUDIT_LOGS };
     }
     if (url.includes('/auth/me')) {
+      const isLoggedOut = localStorage.getItem('inkloom_demo_logged_out') === 'true';
+      if (isLoggedOut) {
+        return { user: null };
+      }
       const savedRole = localStorage.getItem('inkloom_demo_role') || 'manager';
       return { user: DEMO_USERS[savedRole] || DEMO_USERS.manager };
     }
@@ -172,6 +176,28 @@ const getDemoResponse = (config) => {
         message: 'AI Review completed successfully with source-grounded findings.'
       };
     }
+    if (url.includes('/auth/login')) {
+      let body = {};
+      try {
+        body = typeof config.data === 'string' ? JSON.parse(config.data || '{}') : (config.data || {});
+      } catch (e) {
+        body = {};
+      }
+      const em = (body.email || '').toLowerCase();
+      let matchedRole = 'manager';
+      if (em.includes('creator')) matchedRole = 'creator';
+      else if (em.includes('reviewer')) matchedRole = 'reviewer';
+      else if (em.includes('manager')) matchedRole = 'manager';
+      const userData = DEMO_USERS[matchedRole] || DEMO_USERS.manager;
+      return {
+        success: true,
+        token: 'public-demo-token',
+        user: userData
+      };
+    }
+    if (url.includes('/auth/logout')) {
+      return { success: true, message: 'Logged out in demo mode.' };
+    }
     if (url.includes('/content')) {
       let body = {};
       try {
@@ -190,7 +216,7 @@ const getDemoResponse = (config) => {
 
   return {
     success: true,
-    message: 'Public Demo Mode: Simulated mutation applied locally for evaluation.'
+    message: 'Public Demo Mode: Simulated mutation applied locally.'
   };
 };
 

@@ -64,14 +64,14 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Judge Quick-Demo Credentials Card */}
+          {/* Demo Quick-Credentials Card */}
           <div className="mb-6 p-4 rounded-xl bg-brand-50/70 border border-brand-200 space-y-2.5">
             <div className="flex items-center space-x-1.5 text-brand-800 text-xs font-bold">
               <Sparkles className="w-4 h-4 text-brand-600" />
-              <span>Hackathon Judge Quick Sign-In</span>
+              <span>Interactive Demo Quick Sign-In</span>
             </div>
             <p className="text-[11px] text-brand-700 leading-tight">
-              Click any demo account to test role-specific brand governance workflows:
+              Select any demo account to test role-specific brand governance workflows:
             </p>
             <div className="grid grid-cols-3 gap-2 pt-1">
               <button

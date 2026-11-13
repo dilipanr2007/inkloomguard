@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   Sparkles,
@@ -16,7 +16,8 @@ import {
   History,
   Users2,
   Compass,
-  Check
+  Check,
+  Info
 } from 'lucide-react';
 
 const TOUR_STEPS = [
@@ -24,7 +25,7 @@ const TOUR_STEPS = [
     id: 'welcome',
     target: null,
     title: 'Welcome to InkloomGuard',
-    subtitle: 'Enterprise AI Brand Governance for CodeNexus India 2026',
+    subtitle: 'Enterprise AI Brand Governance & Compliance Platform',
     roleTag: 'All Roles',
     content: (
       <div className="space-y-3 text-xs text-slate-600 leading-relaxed font-sans">
@@ -62,7 +63,7 @@ const TOUR_STEPS = [
   {
     id: 'brand-workspace',
     target: '[data-tour="brand-workspace"]',
-    title: '1. Brand Workspace & Scope',
+    title: 'Brand Workspace & Scope',
     subtitle: 'FreshPlus Global (Fictional FMCG Beverage Enterprise)',
     roleTag: 'Organization Scope',
     content: (
@@ -72,15 +73,15 @@ const TOUR_STEPS = [
           The company produces 100% pure pasteurized fruit juices with strict natural ingredient standards.
         </p>
         <p className="text-slate-500 text-[11px]">
-          Demo data is isolated within this evaluation workspace and never alters real production datasets.
+          Demo data is safely isolated within this evaluation workspace and never alters real production datasets.
         </p>
       </div>
     )
   },
   {
     id: 'dashboard',
-    target: '[data-tour="nav-dashboard"]',
-    title: '2. Executive Governance Dashboard',
+    target: '[data-tour="kpi-grid"]',
+    title: 'Executive Governance Dashboard',
     subtitle: 'Real-Time Brand Health Index & KPI Telemetry',
     roleTag: 'All Roles',
     content: (
@@ -89,15 +90,15 @@ const TOUR_STEPS = [
           Monitor organization-wide compliance with dynamic KPIs: <strong>Total Submissions</strong>, <strong>Pending Review</strong>, <strong>Approved for Publishing</strong>, and the aggregated <strong>Average Governance Score</strong>.
         </p>
         <p className="text-slate-500 text-[11px]">
-          Managers also receive quick actions to manage active rules and explore violation analytics.
+          These cards reflect real-time telemetry from all submitted marketing assets across active brand campaigns.
         </p>
       </div>
     )
   },
   {
     id: 'submissions',
-    target: '[data-tour="nav-submissions"]',
-    title: '3. Content Review Queue',
+    target: '[data-tour="submissions-table"]',
+    title: 'Content Submissions & Review Queue',
     subtitle: 'Multi-Channel Asset Compliance Lifecycle',
     roleTag: 'Creator & Reviewer',
     content: (
@@ -106,15 +107,15 @@ const TOUR_STEPS = [
           Track pre-publication assets across social media, advertising billboards, retail packaging, influencer sponsorships, e-commerce landing pages, and newsletters.
         </p>
         <p className="text-slate-500 text-[11px]">
-          Filter by status: <code>Approved</code>, <code>In Review</code>, <code>AI Reviewed</code>, <code>Changes Requested</code>, and <code>Rejected</code>.
+          Filter and inspect submissions by review status: <code>Approved</code>, <code>In Review</code>, <code>AI Reviewed</code>, <code>Changes Requested</code>, and <code>Rejected</code>.
         </p>
       </div>
     )
   },
   {
     id: 'submit-content',
-    target: '[data-tour="nav-submit"]',
-    title: '4. Submit Content Studio',
+    target: '[data-tour="action-submit"], [data-tour="nav-submit"]',
+    title: 'Submit Content Studio',
     subtitle: 'Creator Pre-Flight Compliance Workflow',
     roleTag: 'Creator & Manager',
     content: (
@@ -131,7 +132,7 @@ const TOUR_STEPS = [
   {
     id: 'knowledge-base',
     target: '[data-tour="nav-knowledge"]',
-    title: '5. Brand & Regulatory Knowledge Library',
+    title: 'Brand & Regulatory Knowledge Library',
     subtitle: 'Traceable Ground Truth: FSSAI, ASCI, CCPA & Brand Rules',
     roleTag: 'Manager Curated',
     content: (
@@ -149,8 +150,8 @@ const TOUR_STEPS = [
   },
   {
     id: 'analytics',
-    target: '[data-tour="nav-analytics"]',
-    title: '6. Governance Analytics & Audit Trail',
+    target: '[data-tour="nav-analytics"], [data-tour="nav-audit"]',
+    title: 'Governance Analytics & Audit Trail',
     subtitle: 'Violation Distributions & Regulatory Traceability',
     roleTag: 'Reviewer & Manager',
     content: (
@@ -167,13 +168,13 @@ const TOUR_STEPS = [
   {
     id: 'role-switcher',
     target: '[data-tour="role-switcher"]',
-    title: '7. Evaluator Perspective Switcher',
+    title: 'Multi-Role Perspective Switcher',
     subtitle: 'Experience All Three Role Perspectives in 1 Click',
-    roleTag: 'Hackathon Evaluator',
+    roleTag: 'Role Governance',
     content: (
       <div className="space-y-2 text-xs text-slate-600 leading-relaxed">
         <p>
-          Judges can seamlessly switch between roles at any time using the top bar:
+          You can seamlessly switch between roles at any time using the top bar:
         </p>
         <div className="space-y-1.5 pt-1 text-[11px]">
           <div className="flex items-center space-x-2">
@@ -200,6 +201,13 @@ export default function GuidedTour() {
   const [targetRect, setTargetRect] = useState(null);
   const cardRef = useRef(null);
 
+  // When tour opens (including Replay Tour), always start from step 1
+  useEffect(() => {
+    if (tourOpen) {
+      setCurrentStep(0);
+    }
+  }, [tourOpen]);
+
   // Check if tour should auto-launch on first visit
   useEffect(() => {
     if (!user) return;
@@ -208,13 +216,12 @@ export default function GuidedTour() {
     const isSkipped = user?.onboarding?.skipped || (localStatus && JSON.parse(localStatus)?.skipped);
 
     if (!isCompleted && !isSkipped && !tourOpen) {
-      // Auto-open on first user arrival
       startTour();
     }
   }, [user]);
 
-  // Track target element position
-  useEffect(() => {
+  // Update target element coordinates
+  const updateTargetRect = useCallback(() => {
     if (!tourOpen) return;
     const step = TOUR_STEPS[currentStep];
     if (!step || !step.target) {
@@ -222,30 +229,43 @@ export default function GuidedTour() {
       return;
     }
 
-    const updateRect = () => {
-      const el = document.querySelector(step.target);
-      if (el) {
-        const rect = el.getBoundingClientRect();
+    const selectors = step.target.split(',').map((s) => s.trim());
+    let foundEl = null;
+    for (const sel of selectors) {
+      const el = document.querySelector(sel);
+      if (el && el.offsetParent !== null) {
+        foundEl = el;
+        break;
+      }
+    }
+
+    if (foundEl) {
+      const rect = foundEl.getBoundingClientRect();
+      // Ensure target has non-zero size before spotlighting
+      if (rect.width > 0 && rect.height > 0) {
         setTargetRect({
           top: rect.top,
           left: rect.left,
           width: rect.width,
           height: rect.height
         });
-      } else {
-        setTargetRect(null);
+        return;
       }
-    };
+    }
+    // Target is missing or unavailable: gracefully fallback to centered modal
+    setTargetRect(null);
+  }, [tourOpen, currentStep]);
 
-    updateRect();
-    window.addEventListener('resize', updateRect);
-    window.addEventListener('scroll', updateRect, true);
+  useEffect(() => {
+    updateTargetRect();
+    window.addEventListener('resize', updateTargetRect);
+    window.addEventListener('scroll', updateTargetRect, true);
 
     return () => {
-      window.removeEventListener('resize', updateRect);
-      window.removeEventListener('scroll', updateRect, true);
+      window.removeEventListener('resize', updateTargetRect);
+      window.removeEventListener('scroll', updateTargetRect, true);
     };
-  }, [tourOpen, currentStep]);
+  }, [updateTargetRect]);
 
   if (!tourOpen) return null;
 
@@ -278,41 +298,164 @@ export default function GuidedTour() {
     setCurrentStep(0);
   };
 
+  // Calculate smart responsive card placement so it never covers the spotlight target
+  const getCardPositionStyle = () => {
+    if (typeof window === 'undefined') return {};
+    const vpWidth = window.innerWidth;
+    const vpHeight = window.innerHeight;
+    const cardWidth = Math.min(480, vpWidth - 32);
+    const cardHeight = cardRef.current?.offsetHeight || 380;
+    const padding = 16;
+
+    // Mobile / Tablet small screens: dock at bottom or top
+    if (vpWidth < 640) {
+      if (!targetRect) return {};
+      if (targetRect.top < vpHeight / 2) {
+        return {
+          position: 'fixed',
+          bottom: '16px',
+          left: '16px',
+          right: '16px',
+          maxWidth: 'calc(100vw - 32px)',
+          margin: '0 auto'
+        };
+      } else {
+        return {
+          position: 'fixed',
+          top: '16px',
+          left: '16px',
+          right: '16px',
+          maxWidth: 'calc(100vw - 32px)',
+          margin: '0 auto'
+        };
+      }
+    }
+
+    // Centered when no target or target unavailable
+    if (!targetRect) {
+      return {};
+    }
+
+    // 1. Sidebar target: left < 300px
+    if (targetRect.left < 300 && targetRect.width < 320) {
+      const left = targetRect.left + targetRect.width + padding;
+      const top = Math.max(padding, Math.min(targetRect.top, vpHeight - cardHeight - padding));
+      return {
+        position: 'fixed',
+        left: `${left}px`,
+        top: `${top}px`,
+        maxWidth: `${cardWidth}px`
+      };
+    }
+
+    // 2. Top bar target: top < 120px
+    if (targetRect.top < 120) {
+      const top = targetRect.top + targetRect.height + padding;
+      let left = targetRect.left + (targetRect.width / 2) - (cardWidth / 2);
+      left = Math.max(padding, Math.min(left, vpWidth - cardWidth - padding));
+      return {
+        position: 'fixed',
+        top: `${top}px`,
+        left: `${left}px`,
+        maxWidth: `${cardWidth}px`
+      };
+    }
+
+    // 3. Wide main area elements (KPI grid, Submissions table)
+    const spaceBelow = vpHeight - (targetRect.top + targetRect.height);
+    const spaceAbove = targetRect.top;
+
+    if (spaceBelow >= cardHeight + padding) {
+      const top = targetRect.top + targetRect.height + padding;
+      let left = targetRect.left + (targetRect.width / 2) - (cardWidth / 2);
+      left = Math.max(padding, Math.min(left, vpWidth - cardWidth - padding));
+      return {
+        position: 'fixed',
+        top: `${top}px`,
+        left: `${left}px`,
+        maxWidth: `${cardWidth}px`
+      };
+    } else if (spaceAbove >= cardHeight + padding) {
+      const top = targetRect.top - cardHeight - padding;
+      let left = targetRect.left + (targetRect.width / 2) - (cardWidth / 2);
+      left = Math.max(padding, Math.min(left, vpWidth - cardWidth - padding));
+      return {
+        position: 'fixed',
+        top: `${top}px`,
+        left: `${left}px`,
+        maxWidth: `${cardWidth}px`
+      };
+    }
+
+    return {};
+  };
+
+  const cardStyle = getCardPositionStyle();
+  const isCentered = !targetRect || Object.keys(cardStyle).length === 0;
+
   return (
     <div className="fixed inset-0 z-50 overflow-hidden select-none pointer-events-auto">
-      {/* Semi-Transparent Backdrop */}
-      <div
-        className="absolute inset-0 bg-slate-950/70 backdrop-blur-2xs transition-opacity duration-300"
-        onClick={handleSkip}
-      />
+      {/* SVG Spotlight Cutout Backdrop with Rounded Corners */}
+      {targetRect ? (
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none transition-all duration-300 ease-in-out"
+          style={{ width: '100vw', height: '100vh' }}
+        >
+          <defs>
+            <mask id="tour-spotlight-mask">
+              <rect width="100%" height="100%" fill="white" />
+              <rect
+                x={Math.max(0, targetRect.left - 6)}
+                y={Math.max(0, targetRect.top - 6)}
+                width={targetRect.width + 12}
+                height={targetRect.height + 12}
+                rx="14"
+                ry="14"
+                fill="black"
+              />
+            </mask>
+          </defs>
+          <rect
+            width="100%"
+            height="100%"
+            fill="rgba(15, 23, 42, 0.72)"
+            mask="url(#tour-spotlight-mask)"
+            className="transition-all duration-300 pointer-events-auto"
+            onClick={handleSkip}
+          />
+        </svg>
+      ) : (
+        <div
+          className="absolute inset-0 bg-slate-950/70 backdrop-blur-2xs transition-opacity duration-300"
+          onClick={handleSkip}
+        />
+      )}
 
-      {/* Target Element Spotlight Highlight */}
+      {/* Subtle Glowing Border around Highlighted Target Element */}
       {targetRect && (
         <div
-          className="absolute rounded-lg border-2 border-brand-400 ring-4 ring-brand-400/30 transition-all duration-300 pointer-events-none"
+          className="absolute rounded-2xl border-2 border-brand-400 ring-4 ring-brand-400/25 shadow-[0_0_24px_rgba(59,130,246,0.4)] pointer-events-none transition-all duration-300 ease-in-out"
           style={{
-            top: `${Math.max(0, targetRect.top - 4)}px`,
-            left: `${Math.max(0, targetRect.left - 4)}px`,
-            width: `${targetRect.width + 8}px`,
-            height: `${targetRect.height + 8}px`,
-            boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.7)'
+            top: `${Math.max(0, targetRect.top - 6)}px`,
+            left: `${Math.max(0, targetRect.left - 6)}px`,
+            width: `${targetRect.width + 12}px`,
+            height: `${targetRect.height + 12}px`
           }}
         />
       )}
 
-      {/* Tour Dialog Card */}
-      <div className="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+      {/* Tour Dialog Card Wrapper */}
+      <div
+        className={
+          isCentered
+            ? 'absolute inset-0 flex items-center justify-center p-4 pointer-events-none'
+            : 'pointer-events-none'
+        }
+      >
         <div
           ref={cardRef}
-          className="relative bg-white rounded-2xl shadow-2xl border border-slate-200/90 max-w-lg w-full p-6 text-slate-900 pointer-events-auto animate-in fade-in zoom-in-95 duration-200"
-          style={
-            targetRect && currentStep > 0
-              ? {
-                  // Position near spotlight if space permits, otherwise keep comfortably centered
-                  maxWidth: '460px'
-                }
-              : {}
-          }
+          style={cardStyle}
+          className="relative bg-white rounded-2xl shadow-2xl border border-slate-200/90 max-w-lg w-full p-6 text-slate-900 pointer-events-auto animate-in fade-in zoom-in-95 duration-200 transition-all"
         >
           {/* Header */}
           <div className="flex items-start justify-between pb-3 border-b border-slate-100">
@@ -324,9 +467,15 @@ export default function GuidedTour() {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full border border-brand-200">
                   {step.roleTag}
                 </span>
-                <span className="text-[11px] font-medium text-slate-400">
+                <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
                   Step {currentStep + 1} of {TOUR_STEPS.length}
                 </span>
+                {!targetRect && currentStep > 0 && (
+                  <span className="text-[10px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 flex items-center space-x-1">
+                    <Info className="w-3 h-3 text-amber-600" />
+                    <span>Overview</span>
+                  </span>
+                )}
               </div>
               <h2 className="text-base font-bold text-slate-900 tracking-tight">{step.title}</h2>
               <p className="text-[11px] text-slate-500 font-medium">{step.subtitle}</p>
@@ -357,7 +506,7 @@ export default function GuidedTour() {
                     ? 'w-2 bg-brand-300'
                     : 'w-2 bg-slate-200'
                 }`}
-                title={`Go to Step ${idx + 1}`}
+                title={`Step ${idx + 1}: ${s.title}`}
               />
             ))}
           </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard,
@@ -11,14 +11,22 @@ import {
   ShieldAlert,
   Sparkles,
   Layers,
-  Compass
+  Compass,
+  LogOut
 } from 'lucide-react';
 
 export default function Sidebar() {
-  const { user, startTour } = useAuth();
+  const { user, logout, startTour } = useAuth();
+  const navigate = useNavigate();
+
   if (!user) return null;
 
   const role = user.role;
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const navItems = [
     {
@@ -75,7 +83,7 @@ export default function Sidebar() {
           <span>Brand Workspace</span>
         </div>
         <p className="text-sm font-bold text-white mt-1 tracking-tight">FreshPlus Global</p>
-        <p className="text-[11px] text-slate-400">CodeNexus 2026 Demo Scope</p>
+        <p className="text-[11px] text-slate-400">Enterprise Brand Workspace</p>
       </div>
 
       {/* Nav Links */}
@@ -133,6 +141,26 @@ export default function Sidebar() {
         <p className="text-slate-400 leading-relaxed">
           AI assists with citations & suggestions. Humans hold final publication authority.
         </p>
+      </div>
+
+      {/* User Session & Logout in Sidebar */}
+      <div className="px-3 pb-3 border-t border-slate-800 pt-3">
+        <div className="flex items-center justify-between px-2 py-1.5 text-xs text-slate-400">
+          <div className="truncate mr-2">
+            <p className="font-semibold text-slate-200 truncate">{user.name}</p>
+            <p className="text-[10px] text-slate-500 capitalize">{user.role} • {user.organization}</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex items-center space-x-1 px-2.5 py-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-950/40 rounded-lg transition-colors shrink-0 border border-transparent hover:border-rose-800/40"
+            title="Log Out"
+            aria-label="Log Out"
+          >
+            <LogOut className="w-3.5 h-3.5 text-rose-400" />
+            <span className="text-[11px] font-medium">Logout</span>
+          </button>
+        </div>
       </div>
     </aside>
   );
